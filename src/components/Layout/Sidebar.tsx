@@ -22,7 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeView, onViewChange }) =
           { id: 'dashboard', label: 'Tableau de bord', icon: Home },
           { id: 'restaurants', label: 'Restaurants', icon: Store },
           { id: 'livreurs', label: 'Livreurs', icon: Truck },
-          { id: 'clients', label: 'Clients', icon: Users },
+          { id: 'users', label: 'Gestion des utilisateurs', icon: Users },
           { id: 'commandes', label: 'Commandes', icon: ShoppingBag },
           { id: 'analytics', label: 'Analytiques', icon: BarChart3 },
           { id: 'settings', label: 'Paramètres', icon: Settings },

@@ -1,69 +1,25 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, MapPin, MoreHorizontal, Phone, Search, Store, XCircle } from 'lucide-react';
+import {
+  AdminRestaurant,
+  AdminRestaurantPayload,
+  createAdminRestaurant,
+  fetchAdminRestaurants,
+  toggleRestaurantOpen,
+  updateRestaurantStatus,
+} from '../../services/restaurants';
 
-interface Restaurant {
-  id: string;
-  name: string;
-  owner: string;
-  address: string;
-  phone: string;
-  email: string;
-  category: string;
-  status: 'active' | 'pending' | 'suspended';
-  isOpen: boolean;
-  createdAt: string;
-}
-
-const initialRestaurants: Restaurant[] = [
-  {
-    id: 'RST-2024-001',
-    name: 'Chez Fatou',
-    owner: 'Fatou Ndiaye',
-    address: 'Plateau, Dakar',
-    phone: '+221 77 123 45 67',
-    email: 'contact@chezfatou.sn',
-    category: 'Cuisine sénégalaise',
-    status: 'active',
-    isOpen: true,
-    createdAt: '2024-01-12'
-  },
-  {
-    id: 'RST-2024-002',
-    name: 'Le Lagon',
-    owner: 'Mamadou Diop',
-    address: 'Corniche Ouest, Dakar',
-    phone: '+221 77 987 65 43',
-    email: 'hello@lelagon.sn',
-    category: 'Gastronomique',
-    status: 'pending',
-    isOpen: false,
-    createdAt: '2024-02-02'
-  },
-  {
-    id: 'RST-2024-003',
-    name: 'Teranga Food',
-    owner: 'Aïda Faye',
-    address: 'Mermoz, Dakar',
-    phone: '+221 76 888 77 66',
-    email: 'contact@terangafood.sn',
-    category: 'Street food',
-    status: 'active',
-    isOpen: true,
-    createdAt: '2024-03-18'
-  }
-];
-
-const statusColors: Record<Restaurant['status'], string> = {
+const statusColors: Record<AdminRestaurant['status'], string> = {
   active: 'bg-green-100 text-green-800',
   pending: 'bg-yellow-100 text-yellow-800',
   suspended: 'bg-red-100 text-red-800'
 };
 
 const RestaurantManagement: React.FC = () => {
-  const [restaurants, setRestaurants] = useState<Restaurant[]>(initialRestaurants);
+  const [restaurants, setRestaurants] = useState<AdminRestaurant[]>([]);
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | Restaurant['status']>('all');
-  const [newRestaurant, setNewRestaurant] = useState({
+  const [filterStatus, setFilterStatus] = useState<'all' | AdminRestaurant['status']>('all');
+  const [newRestaurant, setNewRestaurant] = useState<AdminRestaurantPayload>({
     name: '',
     owner: '',
     address: '',
@@ -72,6 +28,24 @@ const RestaurantManagement: React.FC = () => {
     category: '',
     isOpen: true
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const data = await fetchAdminRestaurants();
+        setRestaurants(data);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Impossible de récupérer les restaurants.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   const stats = useMemo(() => ({
     total: restaurants.length,
@@ -89,46 +63,59 @@ const RestaurantManagement: React.FC = () => {
     return matchesSearch && matchesStatus;
   }), [restaurants, search, filterStatus]);
 
-  const handleCreate = (event: React.FormEvent) => {
+  const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!newRestaurant.name || !newRestaurant.owner || !newRestaurant.email) return;
 
-    const newEntry: Restaurant = {
-      id: `RST-${Date.now()}`,
-      name: newRestaurant.name,
-      owner: newRestaurant.owner,
-      address: newRestaurant.address,
-      phone: newRestaurant.phone,
-      email: newRestaurant.email,
-      category: newRestaurant.category || 'Non spécifiée',
-      status: 'pending',
-      isOpen: newRestaurant.isOpen,
-      createdAt: new Date().toISOString().slice(0, 10)
-    };
-
-    setRestaurants([newEntry, ...restaurants]);
-    setNewRestaurant({
-      name: '',
-      owner: '',
-      address: '',
-      phone: '',
-      email: '',
-      category: '',
-      isOpen: true
-    });
+    try {
+      const created = await createAdminRestaurant(newRestaurant);
+      setRestaurants((current) => [created, ...current]);
+      setError(null);
+      setNewRestaurant({
+        name: '',
+        owner: '',
+        address: '',
+        phone: '',
+        email: '',
+        category: '',
+        isOpen: true
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Création impossible.');
+    }
   };
 
-  const toggleOpenStatus = (id: string) => {
-    setRestaurants((current) => current.map((restaurant) =>
-      restaurant.id === id ? { ...restaurant, isOpen: !restaurant.isOpen } : restaurant
-    ));
+  const toggleOpenStatus = async (id: number) => {
+    try {
+      const { isOpen } = await toggleRestaurantOpen(id);
+      setRestaurants((current) => current.map((restaurant) =>
+        restaurant.id === id ? { ...restaurant, isOpen } : restaurant
+      ));
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Mise à jour impossible.');
+    }
   };
 
-  const updateStatus = (id: string, status: Restaurant['status']) => {
-    setRestaurants((current) => current.map((restaurant) =>
-      restaurant.id === id ? { ...restaurant, status } : restaurant
-    ));
+  const updateStatus = async (id: number, status: AdminRestaurant['status']) => {
+    try {
+      await updateRestaurantStatus(id, status);
+      setRestaurants((current) => current.map((restaurant) =>
+        restaurant.id === id ? { ...restaurant, status } : restaurant
+      ));
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Mise à jour impossible.');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">Chargement des restaurants...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -136,6 +123,12 @@ const RestaurantManagement: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Gestion des restaurants</h1>
         <p className="text-gray-600">Créez, validez et suivez les restaurants partenaires.</p>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4">

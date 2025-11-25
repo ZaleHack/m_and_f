@@ -58,7 +58,7 @@ const AppContent: React.FC = () => {
           case 'dashboard': return <AdminDashboard />;
           case 'restaurants': return <RestaurantManagement />;
           case 'livreurs': return <LivreurManagement />;
-          case 'clients': return <UserManagement />;
+          case 'users': return <UserManagement />;
           case 'commandes': return <div className="p-6">Toutes les commandes</div>;
           case 'analytics': return <div className="p-6">Rapports et analytiques</div>;
           case 'settings': return <div className="p-6">Paramètres système</div>;

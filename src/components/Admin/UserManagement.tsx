@@ -1,53 +1,21 @@
-import React, { useMemo, useState } from 'react';
-import { CheckCircle2, Mail, MoreHorizontal, Phone, Search, Shield, UserPlus } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, Mail, MoreHorizontal, Phone, Search, Shield, Trash2, UserPlus } from 'lucide-react';
+import {
+  AdminUser,
+  AdminUserPayload,
+  createAdminUser,
+  deleteAdminUser,
+  fetchAdminUsers,
+  updateAdminUser,
+} from '../../services/users';
 
-interface PlatformUser {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: 'admin' | 'restaurant' | 'livreur' | 'client';
-  status: 'active' | 'invited' | 'suspended';
-  createdAt: string;
-}
-
-const initialUsers: PlatformUser[] = [
-  {
-    id: 'USR-2024-001',
-    name: 'Fatou Ndiaye',
-    email: 'fatou.ndiaye@example.com',
-    phone: '+221 77 100 20 30',
-    role: 'admin',
-    status: 'active',
-    createdAt: '2024-01-10'
-  },
-  {
-    id: 'USR-2024-002',
-    name: 'Ousmane Ba',
-    email: 'ousmane.ba@example.com',
-    phone: '+221 77 200 30 40',
-    role: 'restaurant',
-    status: 'active',
-    createdAt: '2024-02-05'
-  },
-  {
-    id: 'USR-2024-003',
-    name: 'Aïssatou Diop',
-    email: 'aissatou.diop@example.com',
-    phone: '+221 77 300 40 50',
-    role: 'livreur',
-    status: 'invited',
-    createdAt: '2024-03-15'
-  }
-];
-
-const statusStyles: Record<PlatformUser['status'], string> = {
+const statusStyles: Record<AdminUser['status'], string> = {
   active: 'bg-green-50 text-green-700',
   invited: 'bg-blue-50 text-blue-700',
   suspended: 'bg-red-50 text-red-700'
 };
 
-const roleLabels: Record<PlatformUser['role'], string> = {
+const roleLabels: Record<AdminUser['role'], string> = {
   admin: 'Administrateur',
   restaurant: 'Restaurant',
   livreur: 'Livreur',
@@ -55,15 +23,33 @@ const roleLabels: Record<PlatformUser['role'], string> = {
 };
 
 const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<PlatformUser[]>(initialUsers);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState('');
-  const [filterRole, setFilterRole] = useState<'all' | PlatformUser['role']>('all');
-  const [newUser, setNewUser] = useState({
+  const [filterRole, setFilterRole] = useState<'all' | AdminUser['role']>('all');
+  const [newUser, setNewUser] = useState<AdminUserPayload>({
     name: '',
     email: '',
     phone: '',
-    role: 'client' as PlatformUser['role'],
+    role: 'client',
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const data = await fetchAdminUsers();
+        setUsers(data);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Impossible de charger les utilisateurs.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
 
   const stats = useMemo(() => ({
     total: users.length,
@@ -79,35 +65,49 @@ const UserManagement: React.FC = () => {
     return matchesSearch && matchesRole;
   }), [users, search, filterRole]);
 
-  const handleCreate = (event: React.FormEvent) => {
+  const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!newUser.name || !newUser.email) return;
 
-    const newEntry: PlatformUser = {
-      id: `USR-${Date.now()}`,
-      name: newUser.name,
-      email: newUser.email,
-      phone: newUser.phone,
-      role: newUser.role,
-      status: 'invited',
-      createdAt: new Date().toISOString().slice(0, 10)
-    };
-
-    setUsers([newEntry, ...users]);
-    setNewUser({ name: '', email: '', phone: '', role: 'client' });
+    try {
+      const created = await createAdminUser(newUser);
+      setUsers((current) => [created, ...current]);
+      setNewUser({ name: '', email: '', phone: '', role: 'client' });
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de créer l’utilisateur.');
+    }
   };
 
-  const activateUser = (id: string) => {
-    setUsers((current) => current.map((user) =>
-      user.id === id ? { ...user, status: 'active' } : user
-    ));
+  const updateStatus = async (id: number, status: AdminUser['status']) => {
+    try {
+      const target = users.find((user) => user.id === id);
+      if (!target) return;
+      const updated = await updateAdminUser(id, { ...target, status });
+      setUsers((current) => current.map((user) => (user.id === id ? updated : user)));
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de mettre à jour le statut.');
+    }
   };
 
-  const suspendUser = (id: string) => {
-    setUsers((current) => current.map((user) =>
-      user.id === id ? { ...user, status: 'suspended' } : user
-    ));
+  const removeUser = async (id: number) => {
+    try {
+      await deleteAdminUser(id);
+      setUsers((current) => current.filter((user) => user.id !== id));
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Suppression impossible.');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">Chargement des utilisateurs...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -115,6 +115,12 @@ const UserManagement: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Utilisateurs de la plateforme</h1>
         <p className="text-gray-600">Invitez et administrez les comptes administrateurs, restaurants, livreurs et clients.</p>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -173,7 +179,7 @@ const UserManagement: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700">Rôle</label>
               <select
                 value={newUser.role}
-                onChange={(event) => setNewUser({ ...newUser, role: event.target.value as PlatformUser['role'] })}
+                onChange={(event) => setNewUser({ ...newUser, role: event.target.value as AdminUser['role'] })}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-white"
               >
                 <option value="admin">Administrateur</option>
@@ -239,7 +245,7 @@ const UserManagement: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900">{user.name}</p>
-                          <p className="text-sm text-gray-500">{user.id}</p>
+                          <p className="text-sm text-gray-500">Créé le {user.createdAt}</p>
                         </div>
                       </div>
                     </td>
@@ -251,18 +257,20 @@ const UserManagement: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <Phone className="h-4 w-4 text-gray-400" />
-                          <span>{user.phone || 'Téléphone non renseigné'}</span>
+                          <span>{user.phone || 'Téléphone à compléter'}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-gray-900">{roleLabels[user.role]}</p>
-                      <p className="text-xs text-gray-500">Créé le {user.createdAt}</p>
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-gray-400" />
+                        <span className="text-xs font-medium uppercase tracking-wide text-gray-500">{roleLabels[user.role]}</span>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusStyles[user.status]}`}>
                         {user.status === 'active' && 'Actif'}
-                        {user.status === 'invited' && 'Invitation envoyée'}
+                        {user.status === 'invited' && 'Invité'}
                         {user.status === 'suspended' && 'Suspendu'}
                       </span>
                     </td>
@@ -270,7 +278,7 @@ const UserManagement: React.FC = () => {
                       <div className="flex items-center justify-end gap-2">
                         {user.status !== 'active' && (
                           <button
-                            onClick={() => activateUser(user.id)}
+                            onClick={() => updateStatus(user.id, 'active')}
                             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100"
                           >
                             <CheckCircle2 className="h-4 w-4" />
@@ -279,12 +287,19 @@ const UserManagement: React.FC = () => {
                         )}
                         {user.status !== 'suspended' && (
                           <button
-                            onClick={() => suspendUser(user.id)}
+                            onClick={() => updateStatus(user.id, 'suspended')}
                             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100"
                           >
                             Suspendre
                           </button>
                         )}
+                        <button
+                          onClick={() => removeUser(user.id)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Supprimer
+                        </button>
                         <button className="p-2 hover:bg-gray-100 rounded-md">
                           <MoreHorizontal className="h-4 w-4 text-gray-500" />
                         </button>
