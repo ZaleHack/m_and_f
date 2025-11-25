@@ -19,8 +19,8 @@ Ce projet utilise Vite + React (TypeScript). Les sections ci-dessous expliquent 
    Le script crée la base `mfeats_app`, toutes les tables nécessaires (utilisateurs, restaurants, menus, commandes, livreurs, notifications) et insère quelques comptes exemples.
 
 3. Adapter les mots de passe :
-   - Les valeurs `password_hash` fournies sont des placeholders (`changeme`). Remplacez-les par des hash réels (bcrypt/argon2) avant d'autoriser une authentification réelle.
-   - Configurez l'environnement frontend pour que le mot de passe proposé dans l'écran de connexion corresponde à celui utilisé pour générer vos hash (variable `VITE_DEMO_PASSWORD`).
+   - Les valeurs de colonne `password` fournies sont des placeholders (`changeme`). Remplacez-les par les mots de passe souhaités avant d'autoriser une authentification réelle.
+   - Configurez l'environnement frontend pour que le mot de passe proposé dans l'écran de connexion corresponde à celui stocké en base (variable `VITE_DEMO_PASSWORD`).
 
 4. (Optionnel) Vérifier le contenu :
    ```sql
@@ -34,7 +34,7 @@ Ces étapes suffisent pour disposer d'un schéma de base cohérent avec les type
 ## Synchronisation avec l'application
 - Copiez le fichier `.env.example` en `.env` et ajustez les variables :
   - `VITE_API_BASE_URL` pour pointer vers votre backend.
-  - `VITE_DEMO_PASSWORD` pour refléter le mot de passe en clair ayant servi à générer les hash en base.
+  - `VITE_DEMO_PASSWORD` pour refléter le mot de passe en clair stocké dans la table `users`.
 - L'interface consomme désormais les routes d'authentification exposées par l'API (login, register, profile, logout) via `VITE_API_BASE_URL` (défaut : `http://localhost:3000`).
-- Les emails d'exemple insérés dans la table `users` (`admin@mfeats.com`, `restaurant@mfeats.com`, `livreur@mfeats.com`, `client@mfeats.com`) sont repris par l'écran de connexion. Mettez à jour leurs hash de mot de passe dans MySQL pour refléter les credentials réels attendus.
+- Les emails d'exemple insérés dans la table `users` (`admin@mfeats.com`, `restaurant@mfeats.com`, `livreur@mfeats.com`, `client@mfeats.com`) sont repris par l'écran de connexion. Mettez à jour leurs mots de passe dans MySQL pour refléter les credentials réels attendus.
 - Stockez le token retourné par l'API côté navigateur dans `mf-eats-token` afin que chaque rôle retrouve sa session après rechargement.

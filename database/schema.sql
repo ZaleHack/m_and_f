@@ -8,7 +8,7 @@ USE mfeats_app;
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   email VARCHAR(255) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
+  password VARCHAR(255) NOT NULL,
   name VARCHAR(255) NOT NULL,
   phone VARCHAR(30) NOT NULL,
   role ENUM('client', 'restaurant', 'livreur', 'admin') NOT NULL,
@@ -143,8 +143,8 @@ CREATE TABLE IF NOT EXISTS notifications (
   CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id)
 ) ENGINE=InnoDB;
 
--- Exemple d'utilisateurs de base (mots de passe à remplacer par des hash réels)
-INSERT INTO users (email, password_hash, name, phone, role, address) VALUES
+-- Exemple d'utilisateurs de base (mots de passe stockés en clair pour la démo)
+INSERT INTO users (email, password, name, phone, role, address) VALUES
   ('admin@mfeats.com', 'changeme', 'Admin MF', '+221771234567', 'admin', NULL),
   ('restaurant@mfeats.com', 'changeme', 'Restaurant Dakar', '+221771234568', 'restaurant', 'Dakar, Sénégal'),
   ('livreur@mfeats.com', 'changeme', 'Livreur Pro', '+221771234569', 'livreur', 'Dakar, Sénégal'),
