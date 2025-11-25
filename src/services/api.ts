@@ -7,10 +7,23 @@ interface RequestOptions extends RequestInit {
 export const apiRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
   const { skipAuthHeader, headers, ...rest } = options;
 
-  const mergedHeaders: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...(skipAuthHeader ? {} : headers),
-  };
+  const mergedHeaders = new Headers();
+  mergedHeaders.set('Content-Type', 'application/json');
+
+  if (!skipAuthHeader) {
+    const storedToken = localStorage.getItem('mf-eats-token');
+    if (storedToken) {
+      mergedHeaders.set('Authorization', `Bearer ${storedToken}`);
+    }
+  }
+
+  if (headers instanceof Headers) {
+    headers.forEach((value, key) => mergedHeaders.set(key, value));
+  } else if (Array.isArray(headers)) {
+    headers.forEach(([key, value]) => mergedHeaders.set(key, String(value)));
+  } else if (headers) {
+    Object.entries(headers).forEach(([key, value]) => mergedHeaders.set(key, String(value)));
+  }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
