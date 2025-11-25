@@ -22,14 +22,23 @@ Ce projet utilise Vite + React (TypeScript). Les sections ci-dessous expliquent 
    - Les valeurs de colonne `password` fournies sont des placeholders (`changeme`). Remplacez-les par les mots de passe souhaités avant d'autoriser une authentification réelle.
    - Configurez l'environnement frontend pour que le mot de passe proposé dans l'écran de connexion corresponde à celui stocké en base (variable `VITE_DEMO_PASSWORD`).
 
-4. (Optionnel) Vérifier le contenu :
-   ```sql
-   USE mfeats_app;
-   SHOW TABLES;
-   SELECT email, role FROM users;
-   ```
+ 4. (Optionnel) Vérifier le contenu :
+    ```sql
+    USE mfeats_app;
+    SHOW TABLES;
+    SELECT email, role FROM users;
+    ```
 
-Ces étapes suffisent pour disposer d'un schéma de base cohérent avec les types utilisés dans l'application React.
+ Ces étapes suffisent pour disposer d'un schéma de base cohérent avec les types utilisés dans l'application React.
+
+### Alternative rapide avec Docker
+Si vous ne souhaitez pas installer MySQL localement, un fichier `docker-compose.mysql.yml` est fourni pour démarrer un conteneur MySQL 8.x avec l'utilisateur `root` sans mot de passe, la base `mfeats_app` et l'encodage `utf8mb4`.
+
+```bash
+docker compose -f docker-compose.mysql.yml up -d mysql
+```
+
+Le conteneur applique automatiquement `database/schema.sql` au démarrage. L'API peut alors se connecter sur `localhost:3306` (utilisateur `root`, mot de passe vide) en utilisant la configuration `.env` par défaut.
 
 📌 Consultez `docs/database-cartographie.md` pour une cartographie synthétique des tables MySQL et des exemples d'insertion de données (comptes de test, restaurants et plats).
 
