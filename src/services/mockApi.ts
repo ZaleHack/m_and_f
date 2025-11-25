@@ -1,5 +1,6 @@
 import { DEMO_PASSWORD } from '../config/auth';
 import { User } from '../types';
+import { AdminLivreur, AdminLivreurPayload } from './livreurs';
 import { AdminRestaurant, AdminRestaurantPayload } from './restaurants';
 import { AdminUser, AdminUserPayload } from './users';
 import { RegisterPayload } from './auth';
@@ -88,6 +89,35 @@ let adminUsers: AdminUser[] = [
   },
 ];
 
+let adminLivreurs: AdminLivreur[] = [
+  {
+    id: 1,
+    userId: 100,
+    name: 'Ousmane Ba',
+    email: 'livreur@mfeats.com',
+    phone: '+221 77 111 22 33',
+    vehicle: 'moto',
+    zone: 'Dakar Plateau',
+    status: 'available',
+    deliveries: 1250,
+    rating: 4.9,
+    createdAt: '2025-11-15T14:15:49Z',
+  },
+  {
+    id: 2,
+    userId: 101,
+    name: 'Fatou Sene',
+    email: 'fatou@mfeats.com',
+    phone: '+221 76 222 33 44',
+    vehicle: 'bike',
+    zone: 'Mermoz - Ouakam',
+    status: 'busy',
+    deliveries: 980,
+    rating: 4.7,
+    createdAt: '2025-11-15T14:15:49Z',
+  },
+];
+
 let adminRestaurants: AdminRestaurant[] = [
   {
     id: 1,
@@ -117,6 +147,7 @@ let adminRestaurants: AdminRestaurant[] = [
 
 let lastAuthUser: User | null = null;
 let nextUserId = adminUsers.length + 1;
+let nextLivreurId = adminLivreurs.length + 1;
 let nextRestaurantId = adminRestaurants.length + 1;
 
 const isNetworkError = (error: unknown) => error instanceof TypeError;
@@ -190,6 +221,37 @@ export const handleMockRequest = async <T>(path: string, options: MockRequestOpt
     if (method === 'DELETE') {
       adminUsers = adminUsers.filter((user) => user.id !== userId);
       return undefined;
+    }
+  }
+
+  if (path === '/admin/livreurs' && method === 'GET') {
+    return [...adminLivreurs] as T;
+  }
+
+  if (path === '/admin/livreurs' && method === 'POST') {
+    const newLivreur: AdminLivreur = {
+      id: nextLivreurId++,
+      userId: nextUserId++,
+      deliveries: 0,
+      rating: 5,
+      createdAt: new Date().toISOString(),
+      ...(payload as AdminLivreurPayload),
+      status: (payload as AdminLivreurPayload)?.status || 'available',
+    } as AdminLivreur;
+    adminLivreurs = [newLivreur, ...adminLivreurs];
+    return newLivreur as T;
+  }
+
+  const livreurMatch = path.match(/^\/admin\/livreurs\/(\d+)\/status$/);
+  if (livreurMatch) {
+    const livreurId = Number(livreurMatch[1]);
+    if (method === 'PATCH') {
+      adminLivreurs = adminLivreurs.map((livreur) =>
+        livreur.id === livreurId ? { ...livreur, status: (payload as { status: AdminLivreur['status'] }).status } : livreur
+      );
+      const updated = adminLivreurs.find((livreur) => livreur.id === livreurId);
+      if (!updated) throw new Error('Livreur introuvable.');
+      return updated as T;
     }
   }
 

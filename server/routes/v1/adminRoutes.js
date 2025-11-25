@@ -3,11 +3,14 @@ import { authenticate, requireRoles } from '../../middleware/authMiddleware.js';
 import { validate } from '../../middleware/validate.js';
 import {
   adminSchemas,
+  createAdminLivreur,
   createAdminRestaurant,
   createAdminUser,
   deleteAdminUser,
+  listAdminLivreurs,
   listAdminRestaurants,
   listAdminUsers,
+  updateAdminLivreurStatus,
   toggleAdminRestaurantOpen,
   updateAdminRestaurantStatus,
   updateAdminUser,
@@ -20,6 +23,10 @@ router.get('/users', validate(adminSchemas.listUsers), listAdminUsers);
 router.post('/users', validate(adminSchemas.createUser), createAdminUser);
 router.put('/users/:id', validate(adminSchemas.updateUser), updateAdminUser);
 router.delete('/users/:id', validate(adminSchemas.userId), deleteAdminUser);
+
+router.get('/livreurs', validate(adminSchemas.listLivreurs), listAdminLivreurs);
+router.post('/livreurs', validate(adminSchemas.createLivreur), createAdminLivreur);
+router.patch('/livreurs/:id/status', validate(adminSchemas.updateLivreurStatus), updateAdminLivreurStatus);
 
 router.get('/restaurants', validate(adminSchemas.listRestaurants), listAdminRestaurants);
 router.post('/restaurants', validate(adminSchemas.createRestaurant), createAdminRestaurant);

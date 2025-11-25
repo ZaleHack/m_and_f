@@ -42,6 +42,26 @@ const toAdminRestaurant = (row) => ({
   createdAt: row.created_at,
 });
 
+const mapLivreurStatus = (row) => {
+  if (row.status) return row.status;
+  if (!row.is_available) return 'inactive';
+  return 'available';
+};
+
+const toAdminLivreur = (row) => ({
+  id: row.id,
+  userId: row.user_id,
+  name: row.name,
+  email: row.email,
+  phone: row.phone,
+  vehicle: row.vehicle_type,
+  zone: row.zone || '',
+  status: mapLivreurStatus(row),
+  deliveries: row.total_deliveries || 0,
+  rating: Number(row.rating || 0),
+  createdAt: row.created_at,
+});
+
 const DEFAULT_USER_PASSWORD = env.defaultUserPassword || 'changeme';
 
 export const adminSchemas = {
@@ -105,6 +125,28 @@ export const adminSchemas = {
     body: Joi.object({ status: Joi.string().valid('active', 'pending', 'suspended').required() }),
     query: Joi.object({}),
   }),
+  listLivreurs: Joi.object({
+    query: Joi.object({}),
+    params: Joi.object({}),
+    body: Joi.object({}),
+  }),
+  createLivreur: Joi.object({
+    body: Joi.object({
+      name: Joi.string().required(),
+      email: Joi.string().email().required(),
+      phone: Joi.string().required(),
+      vehicle: Joi.string().valid('bike', 'moto', 'car').required(),
+      zone: Joi.string().required(),
+      status: Joi.string().valid('available', 'busy', 'inactive').default('available'),
+    }),
+    params: Joi.object({}),
+    query: Joi.object({}),
+  }),
+  updateLivreurStatus: Joi.object({
+    params: Joi.object({ id: Joi.number().required() }),
+    body: Joi.object({ status: Joi.string().valid('available', 'busy', 'inactive').required() }),
+    query: Joi.object({}),
+  }),
 };
 
 export const listAdminUsers = async (_req, res, next) => {
@@ -114,6 +156,10 @@ export const listAdminUsers = async (_req, res, next) => {
     );
     res.json(rows.map(toAdminUser));
   } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      res.status(409).json({ message: 'Email déjà utilisé' });
+      return;
+    }
     next(error);
   }
 };
@@ -251,6 +297,85 @@ export const createAdminRestaurant = async (req, res, next) => {
         created_at: new Date().toISOString(),
       })
     );
+  } catch (error) {
+    next(error);
+  }
+};
+
+const fetchLivreurById = async (id) => {
+  const [rows] = await query(
+    `SELECT l.*, u.name, u.email, u.phone
+     FROM livreurs l
+     JOIN users u ON u.id = l.user_id
+     WHERE l.id = :id`,
+    { id }
+  );
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return toAdminLivreur(rows[0]);
+};
+
+export const listAdminLivreurs = async (_req, res, next) => {
+  try {
+    const [rows] = await query(
+      `SELECT l.*, u.name, u.email, u.phone
+       FROM livreurs l
+       JOIN users u ON u.id = l.user_id
+       ORDER BY l.created_at DESC`
+    );
+    res.json(rows.map(toAdminLivreur));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createAdminLivreur = async (req, res, next) => {
+  try {
+    const { name, email, phone, vehicle, zone, status } = req.body;
+    const hashed = await bcrypt.hash(DEFAULT_USER_PASSWORD, 10);
+
+    const [userResult] = await query(
+      `INSERT INTO users (email, password, name, phone, role, is_active, is_verified)
+       VALUES (:email, :password, :name, :phone, 'livreur', 1, 1)`,
+      { email, password: hashed, name, phone }
+    );
+
+    const [result] = await query(
+      `INSERT INTO livreurs (user_id, vehicle_type, zone, status, is_available)
+       VALUES (:user_id, :vehicle_type, :zone, :status, :is_available)`,
+      {
+        user_id: userResult.insertId,
+        vehicle_type: vehicle,
+        zone,
+        status,
+        is_available: status === 'available' ? 1 : 0,
+      }
+    );
+
+    const livreur = await fetchLivreurById(result.insertId);
+    res.status(201).json(livreur);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateAdminLivreurStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    await query('UPDATE livreurs SET status = :status, is_available = :is_available WHERE id = :id', {
+      id,
+      status,
+      is_available: status === 'available' ? 1 : 0,
+    });
+
+    const livreur = await fetchLivreurById(id);
+    if (!livreur) {
+      res.status(404).json({ message: 'Livreur introuvable' });
+      return;
+    }
+
+    res.json(livreur);
   } catch (error) {
     next(error);
   }
