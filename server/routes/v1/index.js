@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import analyticsRoutes from './analyticsRoutes.js';
 import authRoutes from './authRoutes.js';
+import adminRoutes from './adminRoutes.js';
 import geoRoutes from './geoRoutes.js';
 import menuRoutes from './menuRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
@@ -13,6 +14,7 @@ import userRoutes from './userRoutes.js';
 const router = Router();
 
 router.use('/auth', authRoutes);
+router.use('/admin', adminRoutes);
 router.use('/users', userRoutes);
 router.use('/restaurants', restaurantRoutes);
 router.use('/menus', menuRoutes);

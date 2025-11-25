@@ -17,6 +17,7 @@ export const env = {
     secret: process.env.JWT_SECRET || 'change-me-secret',
     expiresIn: process.env.JWT_EXPIRES_IN || '2h',
   },
+  defaultUserPassword: process.env.DEFAULT_USER_PASSWORD || 'changeme',
   integrations: {
     waveApiKey: process.env.WAVE_API_KEY || 'demo-wave-key',
     orangeMoneyApiKey: process.env.ORANGE_MONEY_API_KEY || 'demo-orange-key',
