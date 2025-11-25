@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS users (
   role ENUM('client', 'restaurant', 'livreur', 'admin') NOT NULL,
   avatar_url VARCHAR(500),
   address TEXT,
+  is_verified TINYINT(1) NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  preferences JSON,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
@@ -29,11 +32,17 @@ CREATE TABLE IF NOT EXISTS restaurants (
   phone VARCHAR(30) NOT NULL,
   email VARCHAR(255) NOT NULL,
   image_url VARCHAR(500),
+  cover_image_url VARCHAR(500),
   is_open TINYINT(1) NOT NULL DEFAULT 1,
+  is_verified TINYINT(1) NOT NULL DEFAULT 0,
   rating DECIMAL(3,2) NOT NULL DEFAULT 0.00,
+  total_reviews INT NOT NULL DEFAULT 0,
   delivery_time VARCHAR(50),
   delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   minimum_order DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  commission_rate DECIMAL(5,2) NOT NULL DEFAULT 10.00,
+  opening_hours JSON,
+  cuisine_types JSON,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -50,6 +59,7 @@ CREATE TABLE IF NOT EXISTS livreurs (
   total_deliveries INT NOT NULL DEFAULT 0,
   vehicle_type ENUM('bike', 'moto', 'car') NOT NULL DEFAULT 'moto',
   partnered_restaurants JSON,
+  last_known_location JSON,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -67,6 +77,7 @@ CREATE TABLE IF NOT EXISTS menu_items (
   category VARCHAR(100),
   image_url VARCHAR(500),
   is_available TINYINT(1) NOT NULL DEFAULT 1,
+  nutrition_facts JSON,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -102,6 +113,8 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_phone VARCHAR(30) NOT NULL,
   notes TEXT,
   estimated_delivery_time VARCHAR(50),
+  tracking_code VARCHAR(50),
+  metadata JSON,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -143,9 +156,75 @@ CREATE TABLE IF NOT EXISTS notifications (
   CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id)
 ) ENGINE=InnoDB;
 
+-- Table des paiements liés aux commandes
+CREATE TABLE IF NOT EXISTS payments (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_id BIGINT UNSIGNED NOT NULL,
+  provider ENUM('wave','orange_money','cash') NOT NULL,
+  external_id VARCHAR(255),
+  amount DECIMAL(10,2) NOT NULL,
+  fees DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  status ENUM('pending','authorized','settled','failed','refunded') NOT NULL DEFAULT 'pending',
+  metadata JSON,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_payment_external (external_id),
+  INDEX idx_payments_order (order_id),
+  CONSTRAINT fk_payments_order FOREIGN KEY (order_id) REFERENCES orders(id)
+) ENGINE=InnoDB;
+
+-- Table des événements GPS pour le suivi temps réel
+CREATE TABLE IF NOT EXISTS gps_events (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  livreur_id BIGINT UNSIGNED NOT NULL,
+  order_id BIGINT UNSIGNED,
+  latitude DECIMAL(10,8) NOT NULL,
+  longitude DECIMAL(11,8) NOT NULL,
+  accuracy DECIMAL(5,2),
+  speed DECIMAL(6,2),
+  heading DECIMAL(6,2),
+  captured_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  metadata JSON,
+  PRIMARY KEY (id),
+  INDEX idx_gps_livreur (livreur_id, captured_at),
+  INDEX idx_gps_order (order_id),
+  CONSTRAINT fk_gps_livreur FOREIGN KEY (livreur_id) REFERENCES livreurs(id),
+  CONSTRAINT fk_gps_order FOREIGN KEY (order_id) REFERENCES orders(id)
+) ENGINE=InnoDB;
+
+-- Table de stockage des fichiers médias
+CREATE TABLE IF NOT EXISTS media_assets (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED,
+  scope ENUM('menu','restaurant','avatar','delivery_proof') NOT NULL,
+  path VARCHAR(500) NOT NULL,
+  mime_type VARCHAR(120) NOT NULL,
+  size_bytes BIGINT UNSIGNED NOT NULL,
+  metadata JSON,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  INDEX idx_media_user (user_id),
+  CONSTRAINT fk_media_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB;
+
+-- Table d'audit générique
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED,
+  action VARCHAR(150) NOT NULL,
+  entity_type VARCHAR(100) NOT NULL,
+  entity_id BIGINT UNSIGNED,
+  payload JSON,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  INDEX idx_audit_user (user_id),
+  CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB;
+
 -- Exemple d'utilisateurs de base (mots de passe stockés en clair pour la démo)
-INSERT INTO users (email, password, name, phone, role, address) VALUES
-  ('admin@mfeats.com', 'changeme', 'Admin MF', '+221771234567', 'admin', NULL),
-  ('restaurant@mfeats.com', 'changeme', 'Restaurant Dakar', '+221771234568', 'restaurant', 'Dakar, Sénégal'),
-  ('livreur@mfeats.com', 'changeme', 'Livreur Pro', '+221771234569', 'livreur', 'Dakar, Sénégal'),
-  ('client@mfeats.com', 'changeme', 'Client Test', '+221771234570', 'client', 'Dakar, Sénégal');
+INSERT IGNORE INTO users (email, password, name, phone, role, address, is_verified) VALUES
+  ('admin@mfeats.com', 'changeme', 'Admin MF', '+221771234567', 'admin', NULL, 1),
+  ('restaurant@mfeats.com', 'changeme', 'Restaurant Dakar', '+221771234568', 'restaurant', 'Dakar, Sénégal', 1),
+  ('livreur@mfeats.com', 'changeme', 'Livreur Pro', '+221771234569', 'livreur', 'Dakar, Sénégal', 1),
+  ('client@mfeats.com', 'changeme', 'Client Test', '+221771234570', 'client', 'Dakar, Sénégal', 1);
