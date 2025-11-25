@@ -33,7 +33,7 @@ Ces étapes suffisent pour disposer d'un schéma de base cohérent avec les type
 
 ## Synchronisation avec l'application
 - Copiez le fichier `.env.example` en `.env` et ajustez les variables :
-  - `VITE_API_BASE_URL` pour pointer vers votre backend.
+  - `VITE_API_BASE_URL` pour pointer vers votre backend, **avec le préfixe `/api/v1`** (ex: `http://localhost:3000/api/v1`).
   - `VITE_DEMO_PASSWORD` pour refléter le mot de passe en clair stocké dans la table `users`.
 - L'interface consomme désormais les routes d'authentification exposées par l'API (login, register, profile, logout) via `VITE_API_BASE_URL` (défaut : `http://localhost:3000`).
 - Les emails d'exemple insérés dans la table `users` (`admin@mfeats.com`, `restaurant@mfeats.com`, `livreur@mfeats.com`, `client@mfeats.com`) sont repris par l'écran de connexion. Mettez à jour leurs mots de passe dans MySQL pour refléter les credentials réels attendus.
