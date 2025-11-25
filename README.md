@@ -31,6 +31,8 @@ Ce projet utilise Vite + React (TypeScript). Les sections ci-dessous expliquent 
 
 Ces étapes suffisent pour disposer d'un schéma de base cohérent avec les types utilisés dans l'application React.
 
+📌 Consultez `docs/database-cartographie.md` pour une cartographie synthétique des tables MySQL et des exemples d'insertion de données (comptes de test, restaurants et plats).
+
 ## Synchronisation avec l'application
 - Copiez le fichier `.env.example` en `.env` et ajustez les variables :
   - `VITE_API_BASE_URL` pour pointer vers votre backend, **avec le préfixe `/api/v1`** (ex: `http://localhost:3000/api/v1`).
