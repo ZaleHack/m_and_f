@@ -127,7 +127,7 @@ const LoginForm: React.FC = () => {
             <p className="text-xs text-gray-500 mt-2">
               Mot de passe par défaut :{' '}
               <span className="font-mono bg-gray-100 px-1 rounded">{DEMO_PASSWORD}</span> (mettez à jour cette valeur pour
-              refléter le mot de passe réel utilisé pour générer les hash stockés en base)
+              refléter le mot de passe réellement stocké en base)
             </p>
           </div>
         </div>
