@@ -29,3 +29,8 @@ Ce projet utilise Vite + React (TypeScript). Les sections ci-dessous expliquent 
    ```
 
 Ces étapes suffisent pour disposer d'un schéma de base cohérent avec les types utilisés dans l'application React.
+
+## Synchronisation avec l'application
+- L'interface consomme désormais les routes d'authentification exposées par l'API (login, register, profile, logout) via `VITE_API_BASE_URL` (défaut : `http://localhost:3000`).
+- Les emails d'exemple insérés dans la table `users` (`admin@mfeats.com`, `restaurant@mfeats.com`, `livreur@mfeats.com`, `client@mfeats.com`) sont repris par l'écran de connexion. Mettez à jour leurs hash de mot de passe dans MySQL pour refléter les credentials réels attendus.
+- Stockez le token retourné par l'API côté navigateur dans `mf-eats-token` afin que chaque rôle retrouve sa session après rechargement.

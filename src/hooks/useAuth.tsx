@@ -1,16 +1,20 @@
-import React from 'react';
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User } from '../types';
+import { fetchProfile, loginRequest, logoutRequest, registerRequest } from '../services/auth';
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: Partial<User>, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const USER_STORAGE_KEY = 'mf-eats-user';
+const TOKEN_STORAGE_KEY = 'mf-eats-token';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -20,67 +24,89 @@ export const useAuth = () => {
   return context;
 };
 
+const persistSession = (user: User, token: string) => {
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  localStorage.setItem(TOKEN_STORAGE_KEY, token);
+};
+
+const clearSession = () => {
+  localStorage.removeItem(USER_STORAGE_KEY);
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading user from localStorage or API
-    const savedUser = localStorage.getItem('mf-eats-user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    const savedUser = localStorage.getItem(USER_STORAGE_KEY);
+    const savedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+
+    if (savedToken && !savedUser) {
+      // Token sans profil en cache, on récupère les informations à jour depuis l'API
+      fetchProfile(savedToken)
+        .then((freshUser) => {
+          setUser(freshUser);
+          setToken(savedToken);
+          persistSession(freshUser, savedToken);
+        })
+        .catch(() => {
+          clearSession();
+        })
+        .finally(() => setLoading(false));
+      return;
     }
+
+    if (savedUser && savedToken) {
+      setUser(JSON.parse(savedUser));
+      setToken(savedToken);
+    }
+
     setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
-    
-    // Simulate API call
-    const mockUsers = [
-      { id: '1', email: 'admin@mfeats.com', name: 'Admin MF', phone: '+221771234567', role: 'admin' as const, createdAt: '2024-01-01' },
-      { id: '2', email: 'restaurant@mfeats.com', name: 'Restaurant Dakar', phone: '+221771234568', role: 'restaurant' as const, createdAt: '2024-01-01' },
-      { id: '3', email: 'livreur@mfeats.com', name: 'Livreur Pro', phone: '+221771234569', role: 'livreur' as const, createdAt: '2024-01-01' },
-      { id: '4', email: 'client@mfeats.com', name: 'Client Test', phone: '+221771234570', role: 'client' as const, address: 'Dakar, Sénégal', createdAt: '2024-01-01' },
-    ];
-    
-    const foundUser = mockUsers.find(u => u.email === email);
-    if (foundUser && password === 'password123') {
-      setUser(foundUser);
-      localStorage.setItem('mf-eats-user', JSON.stringify(foundUser));
-    } else {
-      throw new Error('Identifiants invalides');
+    try {
+      const { user: authenticatedUser, token: accessToken } = await loginRequest(email, password);
+      setUser(authenticatedUser);
+      setToken(accessToken);
+      persistSession(authenticatedUser, accessToken);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const register = async (userData: Partial<User>, password: string) => {
     setLoading(true);
-    
-    // Simulate API call
-    const newUser: User = {
-      id: Date.now().toString(),
-      email: userData.email!,
-      name: userData.name!,
-      phone: userData.phone!,
-      role: userData.role!,
-      address: userData.address,
-      createdAt: new Date().toISOString(),
-    };
-    
-    setUser(newUser);
-    localStorage.setItem('mf-eats-user', JSON.stringify(newUser));
-    setLoading(false);
+    try {
+      const { user: registeredUser, token: accessToken } = await registerRequest({
+        email: userData.email!,
+        password,
+        name: userData.name!,
+        phone: userData.phone!,
+        role: userData.role!,
+        address: userData.address,
+      });
+      setUser(registeredUser);
+      setToken(accessToken);
+      persistSession(registeredUser, accessToken);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    const currentToken = localStorage.getItem(TOKEN_STORAGE_KEY) || undefined;
+    await logoutRequest(currentToken);
     setUser(null);
-    localStorage.removeItem('mf-eats-user');
+    setToken(null);
+    clearSession();
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
