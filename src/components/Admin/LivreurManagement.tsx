@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bike, Car, CheckCircle2, Clock3, Mail, MoreHorizontal, Phone, Plus, Search, Truck, XCircle } from 'lucide-react';
+import { Bike, Car, CheckCircle2, Clock3, MoreHorizontal, Phone, Plus, Search, Truck } from 'lucide-react';
 
 interface Livreur {
   id: string;
