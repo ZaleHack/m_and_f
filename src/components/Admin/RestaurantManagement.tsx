@@ -65,7 +65,10 @@ const RestaurantManagement: React.FC = () => {
 
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!newRestaurant.name || !newRestaurant.owner || !newRestaurant.email) return;
+    if (!newRestaurant.name || !newRestaurant.owner || !newRestaurant.email || !newRestaurant.phone || !newRestaurant.address) {
+      setError('Merci de renseigner le nom, le propriétaire, l\'email, le téléphone et l\'adresse.');
+      return;
+    }
 
     try {
       const created = await createAdminRestaurant(newRestaurant);
@@ -192,6 +195,7 @@ const RestaurantManagement: React.FC = () => {
                   onChange={(event) => setNewRestaurant({ ...newRestaurant, phone: event.target.value })}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                   placeholder="+221 xx xxx xx xx"
+                  required
                 />
               </div>
             </div>
@@ -202,6 +206,7 @@ const RestaurantManagement: React.FC = () => {
                 onChange={(event) => setNewRestaurant({ ...newRestaurant, address: event.target.value })}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 placeholder="Quartier, ville"
+                required
               />
             </div>
             <div>
