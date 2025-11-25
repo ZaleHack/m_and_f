@@ -69,6 +69,7 @@ const tryDemoLogin = (email: string, password: string): AuthResponse | null => {
   if (!demoUser) return null;
 
   const { password: _removed, ...publicUser } = demoUser;
+  void _removed;
   return buildDemoAuthResponse(publicUser);
 };
 
