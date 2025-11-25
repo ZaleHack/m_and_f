@@ -26,10 +26,10 @@ const LoginForm: React.FC = () => {
   };
 
   const demoAccounts = [
-    { email: 'admin@mfeats.com', role: 'Administrateur', password: 'password123' },
-    { email: 'restaurant@mfeats.com', role: 'Restaurant', password: 'password123' },
-    { email: 'livreur@mfeats.com', role: 'Livreur', password: 'password123' },
-    { email: 'client@mfeats.com', role: 'Client', password: 'password123' },
+    { email: 'admin@mfeats.com', role: 'Administrateur', password: 'changeme' },
+    { email: 'restaurant@mfeats.com', role: 'Restaurant', password: 'changeme' },
+    { email: 'livreur@mfeats.com', role: 'Livreur', password: 'changeme' },
+    { email: 'client@mfeats.com', role: 'Client', password: 'changeme' },
   ];
 
   return (
@@ -124,7 +124,8 @@ const LoginForm: React.FC = () => {
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Mot de passe pour tous : <span className="font-mono bg-gray-100 px-1 rounded">password123</span>
+              Mot de passe par défaut : <span className="font-mono bg-gray-100 px-1 rounded">changeme</span> (à mettre à jour avec
+              les hash réels configurés dans la base)
             </p>
           </div>
         </div>
