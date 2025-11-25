@@ -153,7 +153,7 @@ let nextRestaurantId = adminRestaurants.length + 1;
 const isNetworkError = (error: unknown) => error instanceof TypeError;
 const parseBody = (body?: BodyInit | null) => (typeof body === 'string' ? JSON.parse(body) : body ? JSON.parse(body as string) : undefined);
 
-export const shouldUseMockApi = () => import.meta.env.VITE_USE_MOCK_API !== 'false';
+export const shouldUseMockApi = () => import.meta.env.VITE_USE_MOCK_API === 'true';
 
 export const handleMockRequest = async <T>(path: string, options: MockRequestOptions): Promise<T | undefined> => {
   if (!shouldUseMockApi()) return undefined;
