@@ -7,6 +7,9 @@ import AdminDashboard from './components/Dashboard/AdminDashboard';
 import ClientDashboard from './components/Dashboard/ClientDashboard';
 import RestaurantDashboard from './components/Dashboard/RestaurantDashboard';
 import LivreurDashboard from './components/Dashboard/LivreurDashboard';
+import RestaurantManagement from './components/Admin/RestaurantManagement';
+import LivreurManagement from './components/Admin/LivreurManagement';
+import UserManagement from './components/Admin/UserManagement';
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
@@ -53,9 +56,9 @@ const AppContent: React.FC = () => {
       case 'admin':
         switch (activeView) {
           case 'dashboard': return <AdminDashboard />;
-          case 'restaurants': return <div className="p-6">Gestion des restaurants</div>;
-          case 'livreurs': return <div className="p-6">Gestion des livreurs</div>;
-          case 'clients': return <div className="p-6">Gestion des clients</div>;
+          case 'restaurants': return <RestaurantManagement />;
+          case 'livreurs': return <LivreurManagement />;
+          case 'clients': return <UserManagement />;
           case 'commandes': return <div className="p-6">Toutes les commandes</div>;
           case 'analytics': return <div className="p-6">Rapports et analytiques</div>;
           case 'settings': return <div className="p-6">Paramètres système</div>;
