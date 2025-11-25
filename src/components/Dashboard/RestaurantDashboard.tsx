@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, CircleCheck, Phone, RefreshCcw, ScrollText, Send } from 'lucide-react';
+import { Building2, CheckCircle2, Phone, RefreshCcw, ScrollText, Send } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { createRestaurant, fetchRestaurants, RestaurantRecord } from '../../services/restaurants';
 
@@ -34,6 +34,7 @@ const RestaurantDashboard: React.FC = () => {
         if (mine) setRestaurant(mine);
         setError(null);
       } catch (err) {
+        console.error('Erreur lors du chargement du restaurant :', err);
         setError(err instanceof Error ? err.message : 'Impossible de récupérer votre restaurant.');
       } finally {
         setLoading(false);
@@ -67,6 +68,7 @@ const RestaurantDashboard: React.FC = () => {
       setRestaurant(created);
       setError(null);
     } catch (err) {
+      console.error('Erreur lors de la création du restaurant :', err);
       setError(err instanceof Error ? err.message : 'Création impossible, merci de réessayer.');
     } finally {
       setSubmitting(false);
@@ -115,7 +117,7 @@ const RestaurantDashboard: React.FC = () => {
             </div>
             {restaurant.is_open && (
               <div className="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm font-medium">
-                <CircleCheck className="h-4 w-4" />
+                <CheckCircle2 className="h-4 w-4" />
                 Restaurant ouvert
               </div>
             )}
