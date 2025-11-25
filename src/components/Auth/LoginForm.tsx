@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.tsx';
+import { DEMO_PASSWORD } from '../../config/auth';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -26,10 +27,10 @@ const LoginForm: React.FC = () => {
   };
 
   const demoAccounts = [
-    { email: 'admin@mfeats.com', role: 'Administrateur', password: 'changeme' },
-    { email: 'restaurant@mfeats.com', role: 'Restaurant', password: 'changeme' },
-    { email: 'livreur@mfeats.com', role: 'Livreur', password: 'changeme' },
-    { email: 'client@mfeats.com', role: 'Client', password: 'changeme' },
+    { email: 'admin@mfeats.com', role: 'Administrateur', password: DEMO_PASSWORD },
+    { email: 'restaurant@mfeats.com', role: 'Restaurant', password: DEMO_PASSWORD },
+    { email: 'livreur@mfeats.com', role: 'Livreur', password: DEMO_PASSWORD },
+    { email: 'client@mfeats.com', role: 'Client', password: DEMO_PASSWORD },
   ];
 
   return (
@@ -124,8 +125,9 @@ const LoginForm: React.FC = () => {
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Mot de passe par défaut : <span className="font-mono bg-gray-100 px-1 rounded">changeme</span> (à mettre à jour avec
-              les hash réels configurés dans la base)
+              Mot de passe par défaut :{' '}
+              <span className="font-mono bg-gray-100 px-1 rounded">{DEMO_PASSWORD}</span> (mettez à jour cette valeur pour
+              refléter le mot de passe réel utilisé pour générer les hash stockés en base)
             </p>
           </div>
         </div>
