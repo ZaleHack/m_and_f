@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS restaurants (
 CREATE TABLE IF NOT EXISTS livreurs (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_id BIGINT UNSIGNED NOT NULL,
+  zone VARCHAR(255),
+  status ENUM('available','busy','inactive') NOT NULL DEFAULT 'available',
   is_available TINYINT(1) NOT NULL DEFAULT 1,
   rating DECIMAL(3,2) NOT NULL DEFAULT 0.00,
   total_deliveries INT NOT NULL DEFAULT 0,

@@ -1,51 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Bike, Car, CheckCircle2, Clock3, MoreHorizontal, Phone, Plus, Search, Truck } from 'lucide-react';
+import {
+  AdminLivreur,
+  AdminLivreurPayload,
+  createAdminLivreur,
+  fetchAdminLivreurs,
+  updateLivreurStatus,
+} from '../../services/livreurs';
 
-interface Livreur {
-  id: string;
-  name: string;
-  phone: string;
-  vehicle: 'bike' | 'moto' | 'car';
-  zone: string;
-  status: 'available' | 'busy' | 'inactive';
-  deliveries: number;
-  rating: number;
-}
-
-const initialLivreurs: Livreur[] = [
-  {
-    id: 'DLV-2024-001',
-    name: 'Ousmane Ba',
-    phone: '+221 77 111 22 33',
-    vehicle: 'moto',
-    zone: 'Dakar Plateau',
-    status: 'available',
-    deliveries: 1250,
-    rating: 4.9
-  },
-  {
-    id: 'DLV-2024-002',
-    name: 'Fatou Sene',
-    phone: '+221 76 222 33 44',
-    vehicle: 'bike',
-    zone: 'Mermoz - Ouakam',
-    status: 'busy',
-    deliveries: 980,
-    rating: 4.7
-  },
-  {
-    id: 'DLV-2024-003',
-    name: 'Pape Ndiaye',
-    phone: '+221 77 333 44 55',
-    vehicle: 'car',
-    zone: 'Keur Massar',
-    status: 'inactive',
-    deliveries: 430,
-    rating: 4.3
-  }
-];
-
-const statusLabels: Record<Livreur['status'], { label: string; classes: string }> = {
+const statusLabels: Record<AdminLivreur['status'], { label: string; classes: string }> = {
   available: { label: 'Disponible', classes: 'bg-green-50 text-green-700' },
   busy: { label: 'En livraison', classes: 'bg-yellow-50 text-yellow-700' },
   inactive: { label: 'Inactif', classes: 'bg-gray-100 text-gray-700' },
@@ -58,16 +21,35 @@ const vehicleIcon = {
 };
 
 const LivreurManagement: React.FC = () => {
-  const [livreurs, setLivreurs] = useState<Livreur[]>(initialLivreurs);
+  const [livreurs, setLivreurs] = useState<AdminLivreur[]>([]);
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | Livreur['status']>('all');
-  const [newLivreur, setNewLivreur] = useState({
+  const [filterStatus, setFilterStatus] = useState<'all' | AdminLivreur['status']>('all');
+  const [newLivreur, setNewLivreur] = useState<AdminLivreurPayload>({
     name: '',
+    email: '',
     phone: '',
-    vehicle: 'moto' as Livreur['vehicle'],
+    vehicle: 'moto',
     zone: '',
-    status: 'available' as Livreur['status'],
+    status: 'available',
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadLivreurs = async () => {
+      try {
+        const data = await fetchAdminLivreurs();
+        setLivreurs(data);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Impossible de charger les livreurs.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadLivreurs();
+  }, []);
 
   const stats = useMemo(() => ({
     total: livreurs.length,
@@ -82,30 +64,39 @@ const LivreurManagement: React.FC = () => {
     return matchesSearch && matchesStatus;
   }), [livreurs, search, filterStatus]);
 
-  const handleCreate = (event: React.FormEvent) => {
+  const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!newLivreur.name || !newLivreur.phone || !newLivreur.zone) return;
+    if (!newLivreur.name || !newLivreur.phone || !newLivreur.zone || !newLivreur.email) return;
 
-    const newEntry: Livreur = {
-      id: `DLV-${Date.now()}`,
-      name: newLivreur.name,
-      phone: newLivreur.phone,
-      vehicle: newLivreur.vehicle,
-      zone: newLivreur.zone,
-      status: newLivreur.status,
-      deliveries: 0,
-      rating: 5
-    };
-
-    setLivreurs([newEntry, ...livreurs]);
-    setNewLivreur({ name: '', phone: '', vehicle: 'moto', zone: '', status: 'available' });
+    try {
+      const created = await createAdminLivreur(newLivreur);
+      setLivreurs((current) => [created, ...current]);
+      setNewLivreur({ name: '', email: '', phone: '', vehicle: 'moto', zone: '', status: 'available' });
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de créer le livreur.');
+    }
   };
 
-  const updateStatus = (id: string, status: Livreur['status']) => {
-    setLivreurs((current) => current.map((livreur) =>
-      livreur.id === id ? { ...livreur, status } : livreur
-    ));
+  const updateStatus = async (id: number, status: AdminLivreur['status']) => {
+    try {
+      const updated = await updateLivreurStatus(id, status);
+      setLivreurs((current) => current.map((livreur) =>
+        livreur.id === id ? updated : livreur
+      ));
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de mettre à jour le statut.');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">Chargement des livreurs...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -113,6 +104,12 @@ const LivreurManagement: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Gestion des livreurs</h1>
         <p className="text-gray-600">Ajoutez de nouveaux livreurs et gérez leur disponibilité.</p>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -144,6 +141,17 @@ const LivreurManagement: React.FC = () => {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                value={newLivreur.email}
+                onChange={(event) => setNewLivreur({ ...newLivreur, email: event.target.value })}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+                placeholder="livreur@exemple.com"
+                required
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700">Téléphone</label>
               <input
                 value={newLivreur.phone}
@@ -168,7 +176,7 @@ const LivreurManagement: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Véhicule</label>
                 <select
                   value={newLivreur.vehicle}
-                  onChange={(event) => setNewLivreur({ ...newLivreur, vehicle: event.target.value as Livreur['vehicle'] })}
+                  onChange={(event) => setNewLivreur({ ...newLivreur, vehicle: event.target.value as AdminLivreur['vehicle'] })}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-white"
                 >
                   <option value="bike">Vélo</option>
@@ -180,7 +188,7 @@ const LivreurManagement: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Statut</label>
                 <select
                   value={newLivreur.status}
-                  onChange={(event) => setNewLivreur({ ...newLivreur, status: event.target.value as Livreur['status'] })}
+                  onChange={(event) => setNewLivreur({ ...newLivreur, status: event.target.value as AdminLivreur['status'] })}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-white"
                 >
                   <option value="available">Disponible</option>
