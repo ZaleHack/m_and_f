@@ -54,11 +54,24 @@ Le conteneur applique automatiquement `database/schema.sql` au démarrage. L'API
 ## Synchronisation avec l'application
 - Copiez le fichier `.env.example` en `.env` et ajustez les variables :
   - `VITE_API_BASE_URL` pour pointer vers votre backend, **avec le préfixe `/api/v1`** (ex: `http://localhost:3000/api/v1`).
-  - `VITE_USE_MOCK_API` à `true` pour travailler sans backend (aucun appel réseau n'est fait, les données viennent de `src/services/mockApi.ts`).
+  - `VITE_USE_MOCK_API` doit rester à `false` pour afficher uniquement les données MySQL (mettez `true` uniquement pour déboguer sans backend).
   - `VITE_DEMO_PASSWORD` pour refléter le mot de passe en clair stocké dans la table `users`.
 - L'interface consomme désormais les routes d'authentification exposées par l'API (login, register, profile, logout) via `VITE_API_BASE_URL` (défaut : `http://localhost:3000`).
 - Les emails d'exemple insérés dans la table `users` (`admin@mfeats.com`, `restaurant@mfeats.com`, `livreur@mfeats.com`, `client@mfeats.com`) sont repris par l'écran de connexion. Mettez à jour leurs mots de passe dans MySQL pour refléter les credentials réels attendus.
 - Stockez le token retourné par l'API côté navigateur dans `mf-eats-token` afin que chaque rôle retrouve sa session après rechargement.
+
+### Lancer l'application complète (frontend + backend MySQL)
+
+1. Vérifiez que MySQL est démarré et accessible via les variables `DB_*` définies dans `.env`.
+2. Démarrez l'API Node (port 3000 par défaut) :
+   ```bash
+   npm run server
+   ```
+3. Dans un autre terminal, lancez le frontend Vite :
+   ```bash
+   npm run dev
+   ```
+4. Ouvrez l'interface sur l'URL indiquée par Vite (http://localhost:5173 par défaut). Toutes les données affichées proviennent alors de la base MySQL.
 
 ## API Node.js/Express
 
