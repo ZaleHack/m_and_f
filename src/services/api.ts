@@ -77,10 +77,20 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
         method: rest.method || 'GET',
         body: rest.body,
         headers,
+        forceMock: true,
       });
     }
 
     if (error instanceof TypeError) {
+      const mockFallback = await handleNetworkFailureWithMock<T>(error, path, {
+        ...rest,
+        method: rest.method || 'GET',
+        body: rest.body,
+        headers,
+        forceMock: true,
+      });
+      if (mockFallback !== undefined) return mockFallback;
+
       throw new Error(
         `Impossible de contacter l'API (${API_BASE_URL}). ` +
           'Assurez-vous que le backend Node est démarré et connecté à MySQL.'
