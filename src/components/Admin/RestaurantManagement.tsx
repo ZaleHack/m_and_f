@@ -260,16 +260,15 @@ const RestaurantManagement: React.FC = () => {
                 placeholder="Cuisine sénégalaise, fast-food..."
               />
             </div>
-            <div className="flex items-center space-x-2">
+            <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
               <input
-                id="restaurant-open"
                 type="checkbox"
                 checked={newRestaurant.isOpen}
                 onChange={(event) => setNewRestaurant({ ...newRestaurant, isOpen: event.target.checked })}
                 className="h-4 w-4 text-orange-600 border-gray-300 rounded"
               />
-              <label htmlFor="restaurant-open" className="text-sm text-gray-700">Ouvert dès l'activation</label>
-            </div>
+              <span>Ouvert dès l'activation</span>
+            </label>
             <button
               type="submit"
               className="w-full bg-orange-600 text-white rounded-lg py-2.5 font-medium hover:bg-orange-700 transition-colors"
