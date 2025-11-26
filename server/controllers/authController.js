@@ -64,6 +64,14 @@ export const login = async (req, res, next) => {
   }
 };
 
+export const logout = async (_req, res, next) => {
+  try {
+    res.json({ message: 'Déconnexion réussie' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const me = async (req, res, next) => {
   try {
     const [rows] = await query('SELECT id, email, role, name, phone, address, avatar_url FROM users WHERE id = :id', {
