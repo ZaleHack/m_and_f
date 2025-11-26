@@ -10,8 +10,29 @@ interface RequestOptions extends RequestInit {
   skipAuthHeader?: boolean;
 }
 
+const getMockResponse = async <T>(path: string, options: RequestOptions): Promise<T> => {
+  const mockResponse = await handleMockRequest<T>(path, {
+    method: options.method || 'GET',
+    body: options.body ?? null,
+    headers: options.headers,
+  });
+
+  if (mockResponse === undefined) {
+    throw new Error(
+      'Cette route n\'est pas encore simulée en mode démo (VITE_USE_MOCK_API=true). ' +
+        'Désactivez le mode mock ou démarrez le backend pour continuer.'
+    );
+  }
+
+  return mockResponse;
+};
+
 export const apiRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
   const { skipAuthHeader, headers, ...rest } = options;
+
+  if (shouldUseMockApi()) {
+    return getMockResponse<T>(path, options);
+  }
 
   const mergedHeaders = new Headers();
   mergedHeaders.set('Content-Type', 'application/json');
