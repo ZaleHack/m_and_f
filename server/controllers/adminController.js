@@ -19,26 +19,12 @@ const toAdminUser = (row) => ({
   status: mapUserStatus(row),
 });
 
-const mapRestaurantStatus = (row) => {
-  if (!row.is_verified && !row.is_open) return 'suspended';
-  if (row.is_verified) return 'active';
-  return 'pending';
-};
-
 const toAdminRestaurant = (row) => ({
   id: row.id,
-  name: row.name,
-  owner: row.owner_name || 'Propriétaire inconnu',
-  address: row.address,
-  phone: row.phone,
-  email: row.email,
-  category: Array.isArray(row.cuisine_types)
-    ? row.cuisine_types[0]
-    : typeof row.cuisine_types === 'string'
-      ? JSON.parse(row.cuisine_types || '[]')[0]
-      : undefined,
-  status: mapRestaurantStatus(row),
-  isOpen: Boolean(row.is_open),
+  nom: row.nom,
+  utilisateur_id: row.utilisateur_id,
+  adresse: row.adresse,
+  description: row.description,
   createdAt: row.created_at,
 });
 
@@ -104,13 +90,9 @@ export const adminSchemas = {
   }),
   createRestaurant: Joi.object({
     body: Joi.object({
-      name: Joi.string().required(),
-      owner: Joi.string().required(),
-      address: Joi.string().required(),
-      phone: Joi.string().required(),
-      email: Joi.string().email().required(),
-      category: Joi.string().allow('', null),
-      isOpen: Joi.boolean().default(false),
+      nom: Joi.string().required(),
+      adresse: Joi.string().required(),
+      description: Joi.string().allow('', null),
     }),
     params: Joi.object({}),
     query: Joi.object({}),
@@ -252,10 +234,9 @@ const getOrCreateOwner = async ({ owner, email, phone }) => {
 export const listAdminRestaurants = async (_req, res, next) => {
   try {
     const [rows] = await query(
-      `SELECT r.id, r.name, r.address, r.phone, r.email, r.is_open, r.is_verified, r.cuisine_types, r.created_at, u.name AS owner_name
-       FROM restaurants r
-       LEFT JOIN users u ON u.id = r.owner_id
-       ORDER BY r.created_at DESC`
+      `SELECT id, utilisateur_id, nom, adresse, description, created_at
+       FROM restaurants
+       ORDER BY created_at DESC`
     );
 
     res.json(rows.map(toAdminRestaurant));
@@ -266,34 +247,26 @@ export const listAdminRestaurants = async (_req, res, next) => {
 
 export const createAdminRestaurant = async (req, res, next) => {
   try {
-    const { name, owner, address, phone, email, category, isOpen } = req.body;
-    const ownerId = await getOrCreateOwner({ owner, email, phone });
+    const { nom, adresse, description } = req.body;
+    const utilisateurId = req.user?.id;
+
+    if (!utilisateurId) {
+      return res.status(400).json({ message: 'Utilisateur requis pour créer un restaurant.' });
+    }
 
     const [result] = await query(
-      `INSERT INTO restaurants (owner_id, name, address, phone, email, cuisine_types, is_open, is_verified)
-       VALUES (:owner_id, :name, :address, :phone, :email, :cuisine_types, :is_open, 0)`,
-      {
-        owner_id: ownerId,
-        name,
-        address,
-        phone,
-        email,
-        cuisine_types: category ? JSON.stringify([category]) : null,
-        is_open: isOpen ? 1 : 0,
-      }
+      `INSERT INTO restaurants (utilisateur_id, nom, adresse, description)
+       VALUES (:utilisateur_id, :nom, :adresse, :description)`,
+      { utilisateur_id: utilisateurId, nom, adresse, description }
     );
 
     res.status(201).json(
       toAdminRestaurant({
         id: result.insertId,
-        name,
-        owner_name: owner,
-        address,
-        phone,
-        email,
-        cuisine_types: category ? [category] : null,
-        is_open: isOpen ? 1 : 0,
-        is_verified: 0,
+        utilisateur_id: utilisateurId,
+        nom,
+        adresse,
+        description,
         created_at: new Date().toISOString(),
       })
     );
@@ -382,42 +355,9 @@ export const updateAdminLivreurStatus = async (req, res, next) => {
 };
 
 export const toggleAdminRestaurantOpen = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const [rows] = await query('SELECT is_open FROM restaurants WHERE id = :id', { id });
-    if (!Array.isArray(rows) || rows.length === 0) {
-      res.status(404).json({ message: 'Restaurant introuvable' });
-      return;
-    }
-
-    const current = Boolean(rows[0].is_open);
-    const newState = current ? 0 : 1;
-    await query('UPDATE restaurants SET is_open = :is_open WHERE id = :id', { id, is_open: newState });
-    res.json({ id: Number(id), isOpen: Boolean(newState) });
-  } catch (error) {
-    next(error);
-  }
+  res.status(400).json({ message: "Le champ 'is_open' n'existe plus sur la table restaurants." });
 };
 
 export const updateAdminRestaurantStatus = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    const is_verified = status === 'active' ? 1 : 0;
-    const is_open = status === 'suspended' ? 0 : undefined;
-
-    if (is_open !== undefined) {
-      await query('UPDATE restaurants SET is_verified = :is_verified, is_open = :is_open WHERE id = :id', {
-        id,
-        is_verified,
-        is_open,
-      });
-    } else {
-      await query('UPDATE restaurants SET is_verified = :is_verified WHERE id = :id', { id, is_verified });
-    }
-
-    res.json({ id: Number(id), status });
-  } catch (error) {
-    next(error);
-  }
+  res.status(400).json({ message: "Les statuts ne sont plus gérés sur la table restaurants." });
 };
