@@ -322,5 +322,8 @@ export const handleNetworkFailureWithMock = async <T>(error: unknown, path: stri
   const response = await handleMockRequest<T>(path, options);
   if (response !== undefined) return response;
 
-  throw error;
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+  throw new Error(
+    `Impossible de contacter l'API (${baseUrl}). Vérifiez que le backend est démarré ou activez le mode démo avec VITE_USE_MOCK_API=true.`
+  );
 };
