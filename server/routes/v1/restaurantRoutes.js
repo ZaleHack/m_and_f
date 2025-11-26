@@ -14,7 +14,7 @@ const router = Router();
 
 router.get('/', authenticate, listRestaurants);
 router.get('/categories/summary', authenticate, categorySummary);
-router.post('/', authenticate, requireRoles('admin'), validate(restaurantSchemas.create), createRestaurant);
+router.post('/', authenticate, requireRoles('admin', 'restaurant'), validate(restaurantSchemas.create), createRestaurant);
 router.patch('/:id/open', authenticate, requireRoles('admin', 'restaurant'), validate(restaurantSchemas.toggle), toggleRestaurant);
 router.patch('/:id/verify', authenticate, requireRoles('admin'), validate(restaurantSchemas.toggle), updateVerification);
 
