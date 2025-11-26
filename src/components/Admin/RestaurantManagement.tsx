@@ -38,13 +38,23 @@ const RestaurantManagement: React.FC = () => {
     total: restaurants.length,
   }), [restaurants]);
 
-  const filteredRestaurants = useMemo(() => restaurants.filter((restaurant) => {
-    const matchesSearch = restaurant.nom.toLowerCase().includes(search.toLowerCase()) ||
-      (restaurant.utilisateur_id ? String(restaurant.utilisateur_id).includes(search) : false) ||
-      (restaurant.description || '').toLowerCase().includes(search.toLowerCase()) ||
-      restaurant.adresse.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch;
-  }), [restaurants, search]);
+  const filteredRestaurants = useMemo(() => {
+    const normalizedSearch = search.toLowerCase();
+
+    return restaurants.filter((restaurant) => {
+      const nom = restaurant.nom?.toLowerCase?.() ?? '';
+      const adresse = restaurant.adresse?.toLowerCase?.() ?? '';
+      const description = restaurant.description?.toLowerCase?.() ?? '';
+      const utilisateur = restaurant.utilisateur_id ? String(restaurant.utilisateur_id) : '';
+
+      return (
+        nom.includes(normalizedSearch) ||
+        utilisateur.includes(normalizedSearch) ||
+        description.includes(normalizedSearch) ||
+        adresse.includes(normalizedSearch)
+      );
+    });
+  }, [restaurants, search]);
 
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
