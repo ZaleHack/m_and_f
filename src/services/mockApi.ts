@@ -9,6 +9,7 @@ interface MockRequestOptions {
   method?: string;
   body?: BodyInit | null;
   headers?: HeadersInit;
+  forceMock?: boolean;
 }
 
 const demoUsers: Array<User & { password: string }> = [
@@ -163,13 +164,15 @@ let nextRestaurantId = adminRestaurants.length + 1;
 const isNetworkError = (error: unknown) => error instanceof TypeError;
 const parseBody = (body?: BodyInit | null) => (typeof body === 'string' ? JSON.parse(body) : body ? JSON.parse(body as string) : undefined);
 
-export const shouldUseMockApi = () => import.meta.env.VITE_USE_MOCK_API === 'true';
+export const shouldUseMockApi = (forceMock = false) => forceMock || import.meta.env.VITE_USE_MOCK_API === 'true';
 
 export const handleMockRequest = async <T>(path: string, options: MockRequestOptions): Promise<T | undefined> => {
-  if (!shouldUseMockApi()) return undefined;
+  const { forceMock = false, ...rest } = options;
 
-  const method = (options.method || 'GET').toUpperCase();
-  const payload = parseBody(options.body);
+  if (!shouldUseMockApi(forceMock)) return undefined;
+
+  const method = (rest.method || 'GET').toUpperCase();
+  const payload = parseBody(rest.body);
 
   if (path === '/auth/login' && method === 'POST') {
     const match = demoUsers.find((user) => user.email === payload?.email && user.password === payload?.password);
