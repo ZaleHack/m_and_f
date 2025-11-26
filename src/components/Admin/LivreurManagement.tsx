@@ -20,16 +20,29 @@ const vehicleIcon = {
   car: Car
 };
 
+type LivreurFormState = {
+  name: string;
+  email: string;
+  phone: string;
+  vehicle: AdminLivreurPayload['vehicle'];
+  zone: string;
+  utilisateurId: string;
+  restaurantId: string;
+  status: AdminLivreurPayload['status'];
+};
+
 const LivreurManagement: React.FC = () => {
   const [livreurs, setLivreurs] = useState<AdminLivreur[]>([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | AdminLivreur['status']>('all');
-  const [newLivreur, setNewLivreur] = useState<AdminLivreurPayload>({
+  const [newLivreur, setNewLivreur] = useState<LivreurFormState>({
     name: '',
     email: '',
     phone: '',
     vehicle: 'moto',
     zone: '',
+    utilisateurId: '',
+    restaurantId: '',
     status: 'available',
   });
   const [loading, setLoading] = useState(true);
@@ -66,12 +79,32 @@ const LivreurManagement: React.FC = () => {
 
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!newLivreur.name || !newLivreur.phone || !newLivreur.zone || !newLivreur.email) return;
+    if (!newLivreur.name || !newLivreur.phone || !newLivreur.zone || !newLivreur.email || !newLivreur.utilisateurId) {
+      setError('Merci de renseigner tous les champs obligatoires, y compris l\'utilisateur et le restaurant associé.');
+      return;
+    }
+
+    const utilisateurId = Number(newLivreur.utilisateurId);
+    const restaurantId = newLivreur.restaurantId ? Number(newLivreur.restaurantId) : undefined;
+    if (Number.isNaN(utilisateurId) || (newLivreur.restaurantId && Number.isNaN(restaurantId))) {
+      setError('`utilisateur_id` et `restaurant_id` doivent être numériques pour respecter la table `livreurs_restaurants`.');
+      return;
+    }
 
     try {
-      const created = await createAdminLivreur(newLivreur);
+      const payload: AdminLivreurPayload = {
+        name: newLivreur.name,
+        email: newLivreur.email,
+        phone: newLivreur.phone,
+        vehicle: newLivreur.vehicle,
+        zone: newLivreur.zone,
+        utilisateur_id: utilisateurId,
+        restaurant_id: restaurantId,
+        status: newLivreur.status,
+      };
+      const created = await createAdminLivreur(payload);
       setLivreurs((current) => [created, ...current]);
-      setNewLivreur({ name: '', email: '', phone: '', vehicle: 'moto', zone: '', status: 'available' });
+      setNewLivreur({ name: '', email: '', phone: '', vehicle: 'moto', zone: '', utilisateurId: '', restaurantId: '', status: 'available' });
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible de créer le livreur.');
@@ -171,6 +204,31 @@ const LivreurManagement: React.FC = () => {
                 required
               />
             </div>
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">ID utilisateur (`utilisateur_id`)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={newLivreur.utilisateurId}
+                  onChange={(event) => setNewLivreur({ ...newLivreur, utilisateurId: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+                  placeholder="Référence dans la table utilisateurs"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Restaurant associé (`restaurant_id`)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={newLivreur.restaurantId}
+                  onChange={(event) => setNewLivreur({ ...newLivreur, restaurantId: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+                  placeholder="Clé étrangère table restaurants"
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Véhicule</label>
@@ -252,19 +310,20 @@ const LivreurManagement: React.FC = () => {
                     <tr key={livreur.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center">
-                            <VehicleIcon className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900">{livreur.name}</p>
-                            <p className="text-sm text-gray-500 flex items-center gap-2"><Phone className="h-4 w-4" /> {livreur.phone}</p>
-                          </div>
+                        <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center">
+                          <VehicleIcon className="h-5 w-5 text-blue-600" />
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-sm font-medium text-gray-900">{livreur.zone}</p>
-                        <p className="text-xs text-gray-500">ID: {livreur.id}</p>
-                      </td>
+                        <div>
+                          <p className="font-semibold text-gray-900">{livreur.name}</p>
+                          <p className="text-sm text-gray-500 flex items-center gap-2"><Phone className="h-4 w-4" /> {livreur.phone}</p>
+                          <p className="text-xs text-gray-500">Utilisateur #{livreur.utilisateur_id ?? livreur.userId}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-medium text-gray-900">{livreur.zone}</p>
+                      <p className="text-xs text-gray-500">ID: {livreur.id} • Restaurant #{livreur.restaurant_id ?? 'N/A'}</p>
+                    </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 text-sm text-gray-700">
                           <Clock3 className="h-4 w-4 text-gray-400" />

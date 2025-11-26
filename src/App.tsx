@@ -10,6 +10,8 @@ import LivreurDashboard from './components/Dashboard/LivreurDashboard';
 import RestaurantManagement from './components/Admin/RestaurantManagement';
 import LivreurManagement from './components/Admin/LivreurManagement';
 import UserManagement from './components/Admin/UserManagement';
+import OrderManagement from './components/Admin/OrderManagement';
+import MenuManagement from './components/Dashboard/MenuManagement';
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
@@ -59,7 +61,7 @@ const AppContent: React.FC = () => {
           case 'restaurants': return <RestaurantManagement />;
           case 'livreurs': return <LivreurManagement />;
           case 'users': return <UserManagement />;
-          case 'commandes': return <div className="p-6">Toutes les commandes</div>;
+          case 'commandes': return <OrderManagement />;
           case 'analytics': return <div className="p-6">Rapports et analytiques</div>;
           case 'settings': return <div className="p-6">Paramètres système</div>;
           default: return <AdminDashboard />;
@@ -68,7 +70,7 @@ const AppContent: React.FC = () => {
       case 'restaurant':
         switch (activeView) {
           case 'dashboard': return <RestaurantDashboard />;
-          case 'menu': return <div className="p-6">Gestion du menu</div>;
+          case 'menu': return <MenuManagement />;
           case 'commandes': return <div className="p-6">Commandes restaurant</div>;
           case 'livreurs': return <div className="p-6">Mes livreurs partenaires</div>;
           case 'analytics': return <div className="p-6">Statistiques restaurant</div>;

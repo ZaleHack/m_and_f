@@ -9,6 +9,8 @@ import {
   updateAdminUser,
 } from '../../services/users';
 
+type UtilisateurType = 'restaurant' | 'livreur' | 'client' | 'administrateur';
+
 const statusStyles: Record<AdminUser['status'], string> = {
   active: 'bg-green-50 text-green-700',
   invited: 'bg-blue-50 text-blue-700',
@@ -22,15 +24,28 @@ const roleLabels: Record<AdminUser['role'], string> = {
   client: 'Client'
 };
 
+const typeLabels: Record<UtilisateurType, string> = {
+  administrateur: 'Administrateur (colonne type)',
+  restaurant: 'Restaurant',
+  livreur: 'Livreur',
+  client: 'Client'
+};
+
+const mapTypeToRole = (type: UtilisateurType): AdminUser['role'] =>
+  (type === 'administrateur' ? 'admin' : type);
+
+const phonePattern = /^\+?\d[\d\s]{7,}$/;
+
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | AdminUser['role']>('all');
-  const [newUser, setNewUser] = useState<AdminUserPayload>({
-    name: '',
+  const [newUser, setNewUser] = useState({
+    nom: '',
     email: '',
-    phone: '',
-    role: 'client',
+    telephone: '',
+    motDePasse: '',
+    type: 'client' as UtilisateurType,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,12 +82,28 @@ const UserManagement: React.FC = () => {
 
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!newUser.name || !newUser.email) return;
+    if (!newUser.nom || !newUser.email || !newUser.telephone || !newUser.motDePasse) {
+      setError('Tous les champs de la table `utilisateurs` sont requis (nom, email, mot de passe, téléphone, type).');
+      return;
+    }
+
+    if (!phonePattern.test(newUser.telephone)) {
+      setError('Le numéro de téléphone doit contenir uniquement des chiffres/espaces et commencer par l’indicatif.');
+      return;
+    }
 
     try {
-      const created = await createAdminUser(newUser);
+      const payload: AdminUserPayload = {
+        name: newUser.nom,
+        email: newUser.email,
+        phone: newUser.telephone,
+        role: mapTypeToRole(newUser.type),
+        type: newUser.type,
+        password: newUser.motDePasse,
+      };
+      const created = await createAdminUser(payload);
       setUsers((current) => [created, ...current]);
-      setNewUser({ name: '', email: '', phone: '', role: 'client' });
+      setNewUser({ nom: '', email: '', telephone: '', motDePasse: '', type: 'client' as UtilisateurType });
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible de créer l’utilisateur.');
@@ -146,17 +177,17 @@ const UserManagement: React.FC = () => {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Créer un utilisateur</h2>
           <form className="space-y-4" onSubmit={handleCreate}>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Nom complet</label>
+              <label className="block text-sm font-medium text-gray-700">Nom (colonne `nom`)</label>
               <input
-                value={newUser.name}
-                onChange={(event) => setNewUser({ ...newUser, name: event.target.value })}
+                value={newUser.nom}
+                onChange={(event) => setNewUser({ ...newUser, nom: event.target.value })}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 placeholder="Ex: Aïssatou Diop"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <label className="block text-sm font-medium text-gray-700">Email (unique)</label>
               <input
                 type="email"
                 value={newUser.email}
@@ -169,20 +200,35 @@ const UserManagement: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700">Téléphone</label>
               <input
-                value={newUser.phone}
-                onChange={(event) => setNewUser({ ...newUser, phone: event.target.value })}
+                value={newUser.telephone}
+                onChange={(event) => setNewUser({ ...newUser, telephone: event.target.value })}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 placeholder="+221 xx xxx xx xx"
+                pattern="\+?[0-9\s]+"
+                title="Reprendre le format attendu en base (numéros internationaux)."
+                required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Rôle</label>
+              <label className="block text-sm font-medium text-gray-700">Mot de passe (colonne `mot_de_passe`)</label>
+              <input
+                type="password"
+                minLength={6}
+                value={newUser.motDePasse}
+                onChange={(event) => setNewUser({ ...newUser, motDePasse: event.target.value })}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+                placeholder="Au moins 6 caractères"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Type (colonne `type`)</label>
               <select
-                value={newUser.role}
-                onChange={(event) => setNewUser({ ...newUser, role: event.target.value as AdminUser['role'] })}
+                value={newUser.type}
+                onChange={(event) => setNewUser({ ...newUser, type: event.target.value as UtilisateurType })}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-white"
               >
-                <option value="admin">Administrateur</option>
+                <option value="administrateur">Administrateur</option>
                 <option value="restaurant">Restaurant</option>
                 <option value="livreur">Livreur</option>
                 <option value="client">Client</option>
@@ -265,6 +311,11 @@ const UserManagement: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <Shield className="h-4 w-4 text-gray-400" />
                         <span className="text-xs font-medium uppercase tracking-wide text-gray-500">{roleLabels[user.role]}</span>
+                        {user.type && (
+                          <span className="px-2 py-0.5 rounded-full bg-gray-100 text-[11px] text-gray-700">
+                            Type BD: {typeLabels[user.type as UtilisateurType] || user.type}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3">

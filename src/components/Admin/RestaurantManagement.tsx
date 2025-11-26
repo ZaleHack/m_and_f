@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, MapPin, MoreHorizontal, Phone, Search, Store, XCircle } from 'lucide-react';
+import { CheckCircle2, Mail, MapPin, MoreHorizontal, Phone, Search, Store, XCircle } from 'lucide-react';
 import {
   AdminRestaurant,
   AdminRestaurantPayload,
@@ -15,14 +15,26 @@ const statusColors: Record<AdminRestaurant['status'], string> = {
   suspended: 'bg-red-100 text-red-800'
 };
 
+type RestaurantFormState = {
+  name: string;
+  utilisateurId: string;
+  address: string;
+  description: string;
+  phone: string;
+  email: string;
+  category: string;
+  isOpen: boolean;
+};
+
 const RestaurantManagement: React.FC = () => {
   const [restaurants, setRestaurants] = useState<AdminRestaurant[]>([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | AdminRestaurant['status']>('all');
-  const [newRestaurant, setNewRestaurant] = useState<AdminRestaurantPayload>({
+  const [newRestaurant, setNewRestaurant] = useState<RestaurantFormState>({
     name: '',
-    owner: '',
+    utilisateurId: '',
     address: '',
+    description: '',
     phone: '',
     email: '',
     category: '',
@@ -56,7 +68,8 @@ const RestaurantManagement: React.FC = () => {
 
   const filteredRestaurants = useMemo(() => restaurants.filter((restaurant) => {
     const matchesSearch = restaurant.name.toLowerCase().includes(search.toLowerCase()) ||
-      restaurant.owner.toLowerCase().includes(search.toLowerCase()) ||
+      (restaurant.utilisateur_id ? String(restaurant.utilisateur_id).includes(search) : false) ||
+      (restaurant.description || '').toLowerCase().includes(search.toLowerCase()) ||
       restaurant.category.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = filterStatus === 'all' || restaurant.status === filterStatus;
 
@@ -65,19 +78,36 @@ const RestaurantManagement: React.FC = () => {
 
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!newRestaurant.name || !newRestaurant.owner || !newRestaurant.email || !newRestaurant.phone || !newRestaurant.address) {
-      setError('Merci de renseigner le nom, le propriétaire, l\'email, le téléphone et l\'adresse.');
+    if (!newRestaurant.name || !newRestaurant.utilisateurId || !newRestaurant.email || !newRestaurant.phone || !newRestaurant.address) {
+      setError('Merci de renseigner le nom, l\'utilisateur propriétaire, l\'email, le téléphone et l\'adresse.');
+      return;
+    }
+
+    const utilisateurId = Number(newRestaurant.utilisateurId);
+    if (Number.isNaN(utilisateurId)) {
+      setError('Le champ `utilisateur_id` doit correspondre à un identifiant numérique existant dans la table `utilisateurs`.');
       return;
     }
 
     try {
-      const created = await createAdminRestaurant(newRestaurant);
+      const payload: AdminRestaurantPayload = {
+        name: newRestaurant.name,
+        utilisateur_id: utilisateurId,
+        address: newRestaurant.address,
+        description: newRestaurant.description || undefined,
+        phone: newRestaurant.phone,
+        email: newRestaurant.email,
+        category: newRestaurant.category || undefined,
+        isOpen: newRestaurant.isOpen,
+      };
+      const created = await createAdminRestaurant(payload);
       setRestaurants((current) => [created, ...current]);
       setError(null);
       setNewRestaurant({
         name: '',
-        owner: '',
+        utilisateurId: '',
         address: '',
+        description: '',
         phone: '',
         email: '',
         category: '',
@@ -157,7 +187,7 @@ const RestaurantManagement: React.FC = () => {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Créer un restaurant</h2>
           <form className="space-y-4" onSubmit={handleCreate}>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Nom du restaurant</label>
+              <label className="block text-sm font-medium text-gray-700">Nom du restaurant (colonne `nom`)</label>
               <input
                 value={newRestaurant.name}
                 onChange={(event) => setNewRestaurant({ ...newRestaurant, name: event.target.value })}
@@ -167,13 +197,25 @@ const RestaurantManagement: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Propriétaire</label>
+              <label className="block text-sm font-medium text-gray-700">ID utilisateur propriétaire (`utilisateur_id`)</label>
               <input
-                value={newRestaurant.owner}
-                onChange={(event) => setNewRestaurant({ ...newRestaurant, owner: event.target.value })}
+                type="number"
+                min="1"
+                value={newRestaurant.utilisateurId}
+                onChange={(event) => setNewRestaurant({ ...newRestaurant, utilisateurId: event.target.value })}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
-                placeholder="Nom et prénom"
+                placeholder="ID du propriétaire dans `utilisateurs`"
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <textarea
+                value={newRestaurant.description}
+                onChange={(event) => setNewRestaurant({ ...newRestaurant, description: event.target.value })}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+                placeholder="Présentation du restaurant"
+                rows={3}
               />
             </div>
             <div className="grid grid-cols-1 gap-4">
@@ -200,7 +242,7 @@ const RestaurantManagement: React.FC = () => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Adresse</label>
+              <label className="block text-sm font-medium text-gray-700">Adresse (colonne `adresse`)</label>
               <input
                 value={newRestaurant.address}
                 onChange={(event) => setNewRestaurant({ ...newRestaurant, address: event.target.value })}
@@ -245,7 +287,7 @@ const RestaurantManagement: React.FC = () => {
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Rechercher par nom, propriétaire ou catégorie"
+                  placeholder="Rechercher par nom, utilisateur_id, description ou catégorie"
                   className="w-full rounded-lg border border-gray-300 pl-10 pr-4 py-2.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 />
               </div>
@@ -283,7 +325,12 @@ const RestaurantManagement: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900">{restaurant.name}</p>
-                          <p className="text-sm text-gray-500">{restaurant.id}</p>
+                          <p className="text-sm text-gray-500">
+                            ID #{restaurant.id} • Utilisateur #{restaurant.utilisateur_id ?? 'à renseigner'}
+                          </p>
+                          {restaurant.description && (
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{restaurant.description}</p>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -292,6 +339,10 @@ const RestaurantManagement: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <Phone className="h-4 w-4 text-gray-400" />
                           <span>{restaurant.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-gray-400" />
+                          <span>{restaurant.email}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-gray-400" />
