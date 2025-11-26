@@ -62,7 +62,7 @@ const MenuManagement: React.FC = () => {
     if (form.options) {
       try {
         JSON.parse(form.options);
-      } catch (err) {
+      } catch {
         setError('Le champ options doit contenir un JSON valide (conforme à la colonne `options`).');
         return;
       }
