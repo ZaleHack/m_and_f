@@ -72,9 +72,26 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
     if (shouldUseMockApi()) {
       const mockDirect = await handleMockRequest<T>(path, { ...rest, method: rest.method || 'GET', body: rest.body, headers });
       if (mockDirect !== undefined) return mockDirect;
+      return handleNetworkFailureWithMock<T>(error, path, {
+        ...rest,
+        method: rest.method || 'GET',
+        body: rest.body,
+        headers,
+      });
     }
 
-    return handleNetworkFailureWithMock<T>(error, path, { ...rest, method: rest.method || 'GET', body: rest.body, headers });
+    if (error instanceof TypeError) {
+      throw new Error(
+        `Impossible de contacter l'API (${API_BASE_URL}). ` +
+          'Assurez-vous que le backend Node est démarré et connecté à MySQL.'
+      );
+    }
+
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    throw new Error("Une erreur réseau inattendue est survenue.");
   }
 };
 
