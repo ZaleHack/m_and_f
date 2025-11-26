@@ -4,7 +4,7 @@ import { query } from '../config/db.js';
 export const restaurantSchemas = {
   create: Joi.object({
     body: Joi.object({
-      owner_id: Joi.number().required(),
+      owner_id: Joi.number().optional(),
       name: Joi.string().required(),
       description: Joi.string().allow('', null),
       address: Joi.string().required(),
@@ -99,12 +99,23 @@ export const createRestaurant = async (req, res, next) => {
       opening_hours,
     } = req.body;
 
+    const ownerId = owner_id ?? req.user?.id;
+    if (!ownerId) {
+      return res.status(400).json({ message: 'Propriétaire du restaurant manquant' });
+    }
+
+    if (req.user?.role !== 'admin' && Number(ownerId) !== Number(req.user?.id)) {
+      return res
+        .status(403)
+        .json({ message: "Vous ne pouvez créer qu'un restaurant pour votre propre compte." });
+    }
+
     const cuisines = Array.isArray(cuisine_types) ? cuisine_types : category ? [category] : null;
     const [result] = await query(
       `INSERT INTO restaurants (owner_id, name, description, address, phone, email, image_url, cover_image_url, delivery_time, cuisine_types, opening_hours, delivery_fee, minimum_order, commission_rate)
        VALUES (:owner_id, :name, :description, :address, :phone, :email, :image_url, :cover_image_url, :delivery_time, :cuisine_types, :opening_hours, :delivery_fee, :minimum_order, :commission_rate)`,
       {
-        owner_id,
+        owner_id: ownerId,
         name,
         description,
         address,
@@ -124,7 +135,7 @@ export const createRestaurant = async (req, res, next) => {
     res.status(201).json(
       mapRestaurantRow({
         id: result.insertId,
-        owner_id,
+        owner_id: ownerId,
         name,
         description,
         address,
