@@ -9,12 +9,18 @@ export interface AdminLivreurPayload {
   phone: string;
   vehicle: LivreurVehicle;
   zone: string;
+  /** Identifiant utilisateur (colonne `utilisateur_id`) */
+  utilisateur_id?: number;
+  /** Permet de lier le livreur à un restaurant via la table `livreurs_restaurants`. */
+  restaurant_id?: number;
   status?: LivreurStatus;
 }
 
 export interface AdminLivreur {
   id: number;
   userId: number;
+  utilisateur_id?: number;
+  restaurant_id?: number;
   name: string;
   email: string;
   phone: string;

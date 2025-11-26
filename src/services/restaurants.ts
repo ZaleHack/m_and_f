@@ -2,8 +2,10 @@ import { apiRequest } from './api';
 
 export interface AdminRestaurantPayload {
   name: string;
-  owner: string;
+  /** Identifiant utilisateur (colonne `utilisateur_id`) */
+  utilisateur_id?: number;
   address: string;
+  description?: string;
   phone: string;
   email: string;
   category?: string;
@@ -13,7 +15,8 @@ export interface AdminRestaurantPayload {
 export interface AdminRestaurant {
   id: number;
   name: string;
-  owner: string;
+  utilisateur_id?: number;
+  description?: string;
   address: string;
   phone: string;
   email: string;

@@ -57,6 +57,7 @@ let adminUsers: AdminUser[] = [
     email: 'admin@mfeats.com',
     phone: '+221771234567',
     role: 'admin',
+    type: 'administrateur',
     status: 'active',
     createdAt: '2025-11-15T14:15:49Z',
   },
@@ -66,6 +67,7 @@ let adminUsers: AdminUser[] = [
     email: 'restaurant@mfeats.com',
     phone: '+221771234568',
     role: 'restaurant',
+    type: 'restaurant',
     status: 'active',
     createdAt: '2025-11-15T14:15:49Z',
   },
@@ -75,6 +77,7 @@ let adminUsers: AdminUser[] = [
     email: 'livreur@mfeats.com',
     phone: '+221771234569',
     role: 'livreur',
+    type: 'livreur',
     status: 'active',
     createdAt: '2025-11-15T14:15:49Z',
   },
@@ -84,6 +87,7 @@ let adminUsers: AdminUser[] = [
     email: 'client@mfeats.com',
     phone: '+221771234570',
     role: 'client',
+    type: 'client',
     status: 'active',
     createdAt: '2025-11-15T14:15:49Z',
   },
@@ -93,6 +97,8 @@ let adminLivreurs: AdminLivreur[] = [
   {
     id: 1,
     userId: 100,
+    utilisateur_id: 100,
+    restaurant_id: 1,
     name: 'Ousmane Ba',
     email: 'livreur@mfeats.com',
     phone: '+221 77 111 22 33',
@@ -106,6 +112,8 @@ let adminLivreurs: AdminLivreur[] = [
   {
     id: 2,
     userId: 101,
+    utilisateur_id: 101,
+    restaurant_id: 2,
     name: 'Fatou Sene',
     email: 'fatou@mfeats.com',
     phone: '+221 76 222 33 44',
@@ -122,7 +130,8 @@ let adminRestaurants: AdminRestaurant[] = [
   {
     id: 1,
     name: 'Chez Fatou',
-    owner: 'Fatou Sene',
+    utilisateur_id: 2,
+    description: 'Cuisine sénégalaise authentique',
     address: 'Plateau, Dakar',
     phone: '+221771111111',
     email: 'contact@chezfatou.sn',
@@ -134,7 +143,8 @@ let adminRestaurants: AdminRestaurant[] = [
   {
     id: 2,
     name: 'Le Lagon',
-    owner: 'Ousmane Diallo',
+    utilisateur_id: 2,
+    description: 'Restaurant de fruits de mer en bord de mer',
     address: 'Corniche Ouest, Dakar',
     phone: '+221772222222',
     email: 'hello@lelagon.sn',
@@ -199,10 +209,13 @@ export const handleMockRequest = async <T>(path: string, options: MockRequestOpt
   }
 
   if (path === '/admin/users' && method === 'POST') {
+    const fallbackType = payload?.type || (payload?.role === 'admin' ? 'administrateur' : payload?.role);
     const newUser: AdminUser = {
       id: nextUserId++,
       status: payload?.status || 'invited',
       createdAt: new Date().toISOString(),
+      type: fallbackType as AdminUser['type'],
+      password: (payload as AdminUserPayload)?.password || DEMO_PASSWORD,
       ...(payload as AdminUserPayload),
     };
     adminUsers = [newUser, ...adminUsers];
@@ -229,9 +242,12 @@ export const handleMockRequest = async <T>(path: string, options: MockRequestOpt
   }
 
   if (path === '/admin/livreurs' && method === 'POST') {
+    const newUserId = (payload as AdminLivreurPayload)?.utilisateur_id ?? nextUserId++;
     const newLivreur: AdminLivreur = {
       id: nextLivreurId++,
-      userId: nextUserId++,
+      userId: newUserId,
+      utilisateur_id: newUserId,
+      restaurant_id: (payload as AdminLivreurPayload)?.restaurant_id,
       deliveries: 0,
       rating: 5,
       createdAt: new Date().toISOString(),
@@ -260,12 +276,14 @@ export const handleMockRequest = async <T>(path: string, options: MockRequestOpt
   }
 
   if (path === '/admin/restaurants' && method === 'POST') {
+    const utilisateurId = (payload as AdminRestaurantPayload)?.utilisateur_id ?? nextUserId++;
     const newRestaurant: AdminRestaurant = {
       id: nextRestaurantId++,
       status: 'pending',
       isOpen: payload?.isOpen ?? false,
       createdAt: new Date().toISOString(),
       category: (payload as AdminRestaurantPayload)?.category || 'Général',
+      utilisateur_id: utilisateurId,
       ...(payload as AdminRestaurantPayload),
     };
     adminRestaurants = [newRestaurant, ...adminRestaurants];

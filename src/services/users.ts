@@ -5,6 +5,13 @@ export interface AdminUserPayload {
   email: string;
   phone: string;
   role: 'admin' | 'restaurant' | 'livreur' | 'client';
+  /**
+   * Champ optionnel permettant de stocker le type métier MySQL (colonne `type`)
+   * afin que le formulaire reste aligné sur la table `utilisateurs`.
+   */
+  type?: 'administrateur' | 'restaurant' | 'livreur' | 'client';
+  /** Colonne `mot_de_passe` dans la table `utilisateurs` */
+  password?: string;
   status?: 'active' | 'invited' | 'suspended';
 }
 
