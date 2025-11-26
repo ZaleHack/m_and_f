@@ -7,6 +7,15 @@ Ce projet utilise Vite + React (TypeScript). Les sections ci-dessous expliquent 
 - Compte MySQL `root` sans mot de passe (comme demandé)
 
 ## Initialiser la base de données
+### Option 1 : tout automatiser avec NPM
+1. Copier/ajuster vos variables dans `.env` (par défaut : `localhost:3306`, utilisateur `root` sans mot de passe, base `mfeats_app`).
+2. Lancer la création + insertion des données exemples :
+   ```bash
+   npm run db:setup
+   ```
+   Le script Node (`scripts/bootstrap-db.js`) crée la base si elle n'existe pas puis applique `database/schema.sql` en se connectant à MySQL avec les variables d'environnement.
+
+### Option 2 : exécuter manuellement dans le client MySQL
 1. Ouvrir un terminal MySQL :
    ```bash
    mysql -u root
