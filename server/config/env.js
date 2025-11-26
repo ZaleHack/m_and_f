@@ -11,7 +11,7 @@ export const env = {
     port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
-    name: process.env.DB_NAME || 'mfeats_app',
+    name: process.env.DB_NAME || 'mf_eats',
   },
   jwt: {
     secret: process.env.JWT_SECRET || 'change-me-secret',

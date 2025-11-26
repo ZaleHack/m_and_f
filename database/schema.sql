@@ -1,8 +1,8 @@
 -- Schema MySQL pour l'application M&F Eats
 -- Connectez-vous avec : mysql -u root -p
 
-CREATE DATABASE IF NOT EXISTS mfeats_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE mfeats_app;
+CREATE DATABASE IF NOT EXISTS mf_eats CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE mf_eats;
 
 -- Table des utilisateurs principaux
 CREATE TABLE IF NOT EXISTS users (
@@ -25,29 +25,15 @@ CREATE TABLE IF NOT EXISTS users (
 -- Table des restaurants
 CREATE TABLE IF NOT EXISTS restaurants (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  owner_id BIGINT UNSIGNED NOT NULL,
-  name VARCHAR(255) NOT NULL,
+  utilisateur_id BIGINT UNSIGNED NOT NULL,
+  nom VARCHAR(255) NOT NULL,
+  adresse TEXT NOT NULL,
   description TEXT,
-  address TEXT NOT NULL,
-  phone VARCHAR(30) NOT NULL,
-  email VARCHAR(255) NOT NULL,
-  image_url VARCHAR(500),
-  cover_image_url VARCHAR(500),
-  is_open TINYINT(1) NOT NULL DEFAULT 1,
-  is_verified TINYINT(1) NOT NULL DEFAULT 0,
-  rating DECIMAL(3,2) NOT NULL DEFAULT 0.00,
-  total_reviews INT NOT NULL DEFAULT 0,
-  delivery_time VARCHAR(50),
-  delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  minimum_order DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  commission_rate DECIMAL(5,2) NOT NULL DEFAULT 10.00,
-  opening_hours JSON,
-  cuisine_types JSON,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  INDEX idx_restaurants_owner (owner_id),
-  CONSTRAINT fk_restaurants_owner FOREIGN KEY (owner_id) REFERENCES users(id)
+  INDEX idx_restaurants_utilisateur (utilisateur_id),
+  CONSTRAINT fk_restaurants_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES users(id)
 ) ENGINE=InnoDB;
 
 -- Table des livreurs (profil lié à un utilisateur)
